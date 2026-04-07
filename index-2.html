@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OAV Ganjam – Note Check System</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;min-height:100vh}
+
+/* HEADER */
+.header{background:#1a3a5c;color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.header h1{font-size:1.05rem;font-weight:700}
+.header p{font-size:.76rem;opacity:.8}
+.header-right{font-size:.78rem;opacity:.9;text-align:right}
+.logout-btn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:5px 12px;border-radius:6px;font-size:.78rem;cursor:pointer}
+.logout-btn:hover{background:rgba(255,255,255,.25)}
+
+/* LOGIN */
+.login-wrap{display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 60px)}
+.login-box{background:#fff;border-radius:14px;padding:36px 30px;width:100%;max-width:360px;box-shadow:0 4px 24px rgba(0,0,0,.12)}
+.login-box h2{text-align:center;color:#1a3a5c;margin-bottom:8px;font-size:1.15rem}
+.login-box p{text-align:center;color:#64748b;font-size:.82rem;margin-bottom:24px}
+.role-tabs{display:flex;gap:0;margin-bottom:20px;border:1.5px solid #dde3ed;border-radius:8px;overflow:hidden}
+.role-tab{flex:1;padding:9px;border:none;background:#f8fafc;font-size:.84rem;font-weight:600;color:#64748b;cursor:pointer;transition:.2s}
+.role-tab.active{background:#1a3a5c;color:#fff}
+
+/* COMMON */
+label{display:block;font-size:.8rem;color:#555;font-weight:600;margin-bottom:4px}
+select,input[type=date],input[type=password],input[type=text]{width:100%;padding:10px 12px;border:1.5px solid #dde3ed;border-radius:8px;font-size:.88rem;color:#333;background:#fafbfc;transition:border .2s}
+select:focus,input:focus{outline:none;border-color:#3b82f6;background:#fff}
+.btn{padding:8px 18px;border:none;border-radius:8px;font-size:.85rem;font-weight:700;cursor:pointer;transition:.2s}
+.btn-primary{background:#1a3a5c;color:#fff}.btn-primary:hover{background:#2563eb}
+.btn-sm{padding:5px 12px;font-size:.75rem}
+.alert{padding:11px 14px;border-radius:8px;font-size:.85rem;margin-bottom:12px}
+.alert-success{background:#dcfce7;color:#166534;border:1px solid #86efac}
+.alert-error{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5}
+.alert-info{background:#dbeafe;color:#1e40af;border:1px solid #93c5fd}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+
+/* ── TEACHER FORM ── */
+.form-wrap{max-width:700px;margin:18px auto;padding:0 12px 40px}
+.card{background:#fff;border-radius:12px;padding:18px;box-shadow:0 2px 10px rgba(0,0,0,.07);margin-bottom:14px}
+.card h3{color:#1a3a5c;font-size:.93rem;font-weight:700;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #e8f0fe}
+.student-table{width:100%;border-collapse:collapse;font-size:.82rem}
+.student-table th{background:#1a3a5c;color:#fff;padding:9px 8px;text-align:left;font-weight:600}
+.student-table td{padding:8px;border-bottom:1px solid #eef0f5;vertical-align:middle}
+.student-table tr:hover td{background:#f5f8ff}
+.status-btns{display:flex;gap:6px}
+.btn-status{border:none;padding:5px 12px;border-radius:6px;font-size:.78rem;font-weight:700;cursor:pointer;transition:all .15s}
+.btn-ok{background:#dcfce7;color:#166534}.btn-ok.active{background:#16a34a;color:#fff}
+.btn-no{background:#fee2e2;color:#991b1b}.btn-no.active{background:#dc2626;color:#fff}
+.remarks-input{border:1.5px solid #dde3ed;border-radius:6px;padding:5px 8px;font-size:.78rem;width:100%;min-width:80px}
+.remarks-input:focus{outline:none;border-color:#3b82f6}
+.btn-submit{width:100%;padding:14px;background:#1a3a5c;color:#fff;border:none;border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer;transition:background .2s;margin-top:8px}
+.btn-submit:hover{background:#2563eb}
+.btn-submit:disabled{background:#94a3b8;cursor:not-allowed}
+.quick-btns{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.quick-btn{flex:1;min-width:100px;padding:7px;border:1.5px solid #dde3ed;border-radius:7px;font-size:.78rem;font-weight:600;cursor:pointer;background:#f8fafc;color:#475569}
+.quick-btn:hover{background:#e8f0fe;border-color:#3b82f6;color:#1e40af}
+.summary-bar{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.summary-chip{padding:4px 12px;border-radius:20px;font-size:.76rem;font-weight:600}
+.chip-total{background:#e8f0fe;color:#1e40af}
+.chip-ok{background:#dcfce7;color:#166534}
+.chip-no{background:#fee2e2;color:#991b1b}
+.chip-pending{background:#fef9c3;color:#92400e}
+
+/* ── PRINCIPAL DASHBOARD ── */
+.dash-wrap{max-width:1200px;margin:0 auto;padding:14px 12px 40px}
+.stat-card{background:#fff;border-radius:10px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,.07);text-align:center}
+.stat-num{font-size:1.9rem;font-weight:800;line-height:1}
+.stat-lbl{font-size:.72rem;color:#64748b;margin-top:4px;font-weight:600}
+.blue{color:#2563eb}.green{color:#16a34a}.red{color:#dc2626}.orange{color:#d97706}
+.dash-card{background:#fff;border-radius:12px;padding:18px;box-shadow:0 2px 8px rgba(0,0,0,.07);margin-bottom:14px}
+.dash-card h3{color:#1a3a5c;font-size:.93rem;font-weight:700;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #e8f0fe}
+.tbl{width:100%;border-collapse:collapse;font-size:.81rem}
+.tbl th{background:#1a3a5c;color:#fff;padding:9px 10px;text-align:left;font-weight:600;white-space:nowrap}
+.tbl td{padding:8px 10px;border-bottom:1px solid #eef0f5;vertical-align:middle}
+.tbl tr:hover td{background:#f5f8ff}
+.badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:.72rem;font-weight:700}
+.badge-ok{background:#dcfce7;color:#166534}
+.badge-no{background:#fee2e2;color:#991b1b}
+.badge-over{background:#fee2e2;color:#991b1b}
+.badge-due{background:#fef9c3;color:#92400e}
+.badge-good{background:#dcfce7;color:#166534}
+.overdue-section{background:#fff5f5;border:1.5px solid #fca5a5;border-radius:10px;padding:14px;margin-bottom:14px}
+.overdue-section h4{color:#991b1b;margin-bottom:10px;font-size:.88rem;font-weight:700}
+.tabs{display:flex;gap:4px;margin-bottom:14px;border-bottom:2px solid #e2e8f0;flex-wrap:wrap}
+.tab{padding:8px 14px;border:none;background:none;font-size:.83rem;font-weight:600;color:#64748b;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;border-radius:6px 6px 0 0}
+.tab.active{color:#1a3a5c;border-bottom-color:#1a3a5c;background:#f0f4f8}
+.tab-content{display:none}.tab-content.active{display:block}
+.filter-row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:12px}
+.filter-row>div{flex:1;min-width:110px}
+.refresh-time{font-size:.74rem;color:#94a3b8;text-align:right;margin-bottom:8px}
+.progress-bar{height:5px;background:#e2e8f0;border-radius:3px;overflow:hidden;margin-top:3px}
+.progress-fill{height:100%;border-radius:3px;transition:width .3s}
+.modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:100;overflow-y:auto}
+.modal.open{display:flex;align-items:flex-start;justify-content:center;padding:16px}
+.modal-box{background:#fff;border-radius:12px;padding:18px;width:100%;max-width:920px;margin:auto}
+.modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.modal-header h3{color:#1a3a5c;font-size:.95rem;font-weight:700}
+.close-btn{background:none;border:none;font-size:1.3rem;cursor:pointer;color:#64748b}
+.loading-spinner{text-align:center;padding:30px;color:#64748b;font-size:.9rem}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div>
+    <h1>📓 OAV Ganjam – Note Check System</h1>
+    <p>Odisha Adarsha Vidyalaya, Ganjam · Academic Year 2026-27</p>
+  </div>
+  <div class="header-right" id="headerInfo">
+    <button class="logout-btn" id="logoutBtn" style="display:none" onclick="logout()">Logout</button>
+  </div>
+</div>
+
+<!-- LOGIN SCREEN -->
+<div class="login-wrap" id="screenLogin">
+  <div class="login-box">
+    <h2>🔐 Login</h2>
+    <p>Odisha Adarsha Vidyalaya, Ganjam</p>
+    <div class="role-tabs">
+      <button class="role-tab active" id="tabTeacher" onclick="selectRole('teacher')">👩‍🏫 Teacher</button>
+      <button class="role-tab" id="tabPrincipal" onclick="selectRole('principal')">🏫 Principal</button>
+    </div>
+    <div style="margin-bottom:16px">
+      <label>Password</label>
+      <input type="password" id="pwdInput" placeholder="Enter password" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <div id="loginMsg"></div>
+    <button class="btn btn-primary" style="width:100%;padding:12px;font-size:.95rem" onclick="doLogin()">Login</button>
+  </div>
+</div>
+
+<!-- TEACHER FORM -->
+<div id="screenTeacher" style="display:none">
+<div class="form-wrap">
+
+  <div class="card">
+    <h3>📋 Submission Details</h3>
+    <div class="grid2" style="margin-bottom:12px">
+      <div>
+        <label>Teacher Name</label>
+        <select id="selTeacher" onchange="updateSubjects()">
+          <option value="">-- Select --</option>
+        </select>
+      </div>
+      <div>
+        <label>Class</label>
+        <select id="selClass" onchange="updateSubjects()">
+          <option value="">-- Select --</option>
+        </select>
+      </div>
+    </div>
+    <div class="grid2" style="margin-bottom:12px">
+      <div>
+        <label>Subject</label>
+        <select id="selSubject">
+          <option value="">-- Select Teacher &amp; Class first --</option>
+        </select>
+      </div>
+      <div>
+        <label>Note Type</label>
+        <select id="selNoteType">
+          <option value="">-- Select --</option>
+          <option>Class Note</option>
+          <option>Fair cum Exercise Note</option>
+        </select>
+      </div>
+    </div>
+    <div>
+      <label>Date of Checking</label>
+      <input type="date" id="selDate">
+    </div>
+  </div>
+
+  <div class="card" id="rosterCard" style="display:none">
+    <h3>👥 Student Note Status</h3>
+    <div id="summaryBar" class="summary-bar"></div>
+    <div class="quick-btns">
+      <button class="quick-btn" onclick="markAll('✅')">✅ Mark All OK</button>
+      <button class="quick-btn" onclick="markAll('❌')">❌ Mark All Issues</button>
+      <button class="quick-btn" onclick="clearAll()">🔄 Clear All</button>
+    </div>
+    <div id="rosterMsg"></div>
+    <div style="overflow-x:auto">
+      <table class="student-table">
+        <thead>
+          <tr>
+            <th style="width:36px">#</th>
+            <th>Student Name</th>
+            <th style="width:110px">Status</th>
+            <th>Remarks</th>
+          </tr>
+        </thead>
+        <tbody id="rosterBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="formMsg"></div>
+  <button class="btn-submit" id="btnSubmit" onclick="submitForm()" style="display:none">
+    ✅ Submit Note Check
+  </button>
+
+</div>
+</div>
+
+<!-- PRINCIPAL DASHBOARD -->
+<div id="screenPrincipal" style="display:none">
+<div class="dash-wrap">
+
+  <div class="refresh-time" id="refreshTime"></div>
+
+  <!-- STATS -->
+  <div class="grid4" style="margin-bottom:14px">
+    <div class="stat-card"><div class="stat-num blue" id="statTotal">-</div><div class="stat-lbl">Total Sessions</div></div>
+    <div class="stat-card"><div class="stat-num green" id="statToday">-</div><div class="stat-lbl">Today's Sessions</div></div>
+    <div class="stat-card"><div class="stat-num red" id="statOverdue">-</div><div class="stat-lbl">Overdue Checks</div></div>
+    <div class="stat-card"><div class="stat-num orange" id="statPctOk">-</div><div class="stat-lbl">Note Completion %</div></div>
+  </div>
+
+  <!-- OVERDUE ALERTS -->
+  <div class="overdue-section" id="overdueSection" style="display:none">
+    <h4>🔴 Overdue Checks — No submission in last 30 days</h4>
+    <div id="overdueList"></div>
+  </div>
+
+  <!-- MAIN CARD WITH TABS -->
+  <div class="dash-card">
+    <div class="tabs">
+      <button class="tab active" onclick="showTab('tabOverview',this)">Overview by Teacher</button>
+      <button class="tab" onclick="showTab('tabLog',this)">Submission Log</button>
+      <button class="tab" onclick="showTab('tabStudent',this)">Student View</button>
+    </div>
+
+    <!-- TAB: Overview -->
+    <div class="tab-content active" id="tabOverview">
+      <div class="filter-row">
+        <div><label>Class</label>
+          <select id="ovClass" onchange="renderOverview()">
+            <option value="">All Classes</option>
+          </select>
+        </div>
+        <div><label>Teacher</label>
+          <select id="ovTeacher" onchange="renderOverview()">
+            <option value="">All Teachers</option>
+          </select>
+        </div>
+        <div style="display:flex;align-items:flex-end">
+          <button class="btn btn-primary btn-sm" onclick="loadData()">🔄 Refresh Data</button>
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="tbl">
+          <thead><tr>
+            <th>Teacher</th><th>Class</th><th>Subject</th>
+            <th>Last Check – Class Note</th>
+            <th>Last Check – Fair cum Ex.</th>
+            <th>Status</th><th>Action</th>
+          </tr></thead>
+          <tbody id="overviewBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAB: Log -->
+    <div class="tab-content" id="tabLog">
+      <div class="filter-row">
+        <div><label>Class</label>
+          <select id="logClass" onchange="renderLog()"><option value="">All</option></select>
+        </div>
+        <div><label>Teacher</label>
+          <select id="logTeacher" onchange="renderLog()"><option value="">All</option></select>
+        </div>
+        <div><label>Note Type</label>
+          <select id="logNoteType" onchange="renderLog()">
+            <option value="">All</option>
+            <option>Class Note</option>
+            <option>Fair cum Exercise Note</option>
+          </select>
+        </div>
+        <div><label>From</label><input type="date" id="logFrom" onchange="renderLog()"></div>
+        <div><label>To</label><input type="date" id="logTo" onchange="renderLog()"></div>
+      </div>
+      <div id="logCount" style="font-size:.78rem;color:#64748b;margin-bottom:8px"></div>
+      <div style="overflow-x:auto">
+        <table class="tbl">
+          <thead><tr>
+            <th>Date</th><th>Teacher</th><th>Class</th><th>Subject</th>
+            <th>Note Type</th><th>✅ OK</th><th>❌ Issues</th><th>Total</th><th>Details</th>
+          </tr></thead>
+          <tbody id="logBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAB: Student -->
+    <div class="tab-content" id="tabStudent">
+      <div class="filter-row">
+        <div><label>Class</label>
+          <select id="stuClass" onchange="onStuClassChange()"><option value="">-- Select Class --</option></select>
+        </div>
+        <div><label>Subject</label>
+          <select id="stuSubject" onchange="renderStudentView()"><option value="">All</option></select>
+        </div>
+        <div><label>Note Type</label>
+          <select id="stuNoteType" onchange="renderStudentView()">
+            <option value="">All</option>
+            <option>Class Note</option>
+            <option>Fair cum Exercise Note</option>
+          </select>
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="tbl">
+          <thead><tr>
+            <th>#</th><th>Student Name</th><th>Adm No</th><th>Mobile</th>
+            <th>Checks</th><th>✅ OK</th><th>❌ Issues</th><th>Issue Rate</th>
+          </tr></thead>
+          <tbody id="stuBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- SESSION DETAIL MODAL -->
+<div class="modal" id="detailModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 id="modalTitle">Session Details</h3>
+      <button class="close-btn" onclick="closeModal()">✕</button>
+    </div>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════
+// CONFIG — paste your deployed Apps Script URL below
+// ══════════════════════════════════════════════════════════
+const TEACHER_PWD   = "oav2026";
+const PRINCIPAL_PWD = "principal2026";
+const SCRIPT_URL    = "YOUR_APPS_SCRIPT_URL_HERE";
+// ↑ Replace with: https://script.google.com/macros/s/XXXXX/exec
+// SHEET_CSV_URL is no longer needed — data comes via Apps Script
+
+const OVERDUE_DAYS  = 30;
+
+// ── DATA ────────────────────────────────────
+const TEACHERS = [
+  "Mr. Anil Kumar Das","Mr. Ganesh Sahoo","Mr. Jangyadatta Behera",
+  "Mrs. A Mira Rani","Mrs. Lakshmipriya Sahoo","Ms. Nandini Pradhan",
+  "Ms. Pratibha Padhi","Ms. Pratikshya Das","Mrs. Priyanka Panigrahi",
+  "Mr. Radhesyam Khuntia","Mr. Sidhartha Ray","Mrs. Snigdha Jena",
+  "Mr. Srikant Mallick","Mrs. Subhasmita Jena","Mrs. Usharani Manik",
+  "Ms. Sanjukta Pradhan","Mr. Sunil Kumar Parida"
+];
+
+const CLASS_ORDER = ['6A','6B','7A','7B','8A','8B','9A','9B','10A','10B','11','12'];
+
+const CLASS_SUBJECTS = {
+  "6A":{"Mr. Anil Kumar Das":[],"Mr. Ganesh Sahoo":["Sanskrit"],"Mr. Jangyadatta Behera":[],"Mrs. A Mira Rani":[],"Mrs. Lakshmipriya Sahoo":[],"Ms. Nandini Pradhan":["Math"],"Ms. Pratibha Padhi":["Science"],"Ms. Pratikshya Das":[],"Mrs. Priyanka Panigrahi":[],"Mr. Radhesyam Khuntia":["English"],"Mr. Sidhartha Ray":[],"Mrs. Snigdha Jena":["Hindi","Odia"],"Mr. Srikant Mallick":["SST"],"Mrs. Subhasmita Jena":[],"Mrs. Usharani Manik":[],"Ms. Sanjukta Pradhan":["CS"],"Mr. Sunil Kumar Parida":[]},
+  "6B":{"Mr. Anil Kumar Das":[],"Mr. Ganesh Sahoo":["Sanskrit"],"Mr. Jangyadatta Behera":[],"Mrs. A Mira Rani":[],"Mrs. Lakshmipriya Sahoo":[],"Ms. Nandini Pradhan":["Math"],"Ms. Pratibha Padhi":["Science"],"Ms. Pratikshya Das":[],"Mrs. Priyanka Panigrahi":[],"Mr. Radhesyam Khuntia":["English"],"Mr. Sidhartha Ray":[],"Mrs. Snigdha Jena":["Hindi","Odia"],"Mr. Srikant Mallick":["SST"],"Mrs. Subhasmita Jena":[],"Mrs. Usharani Manik":[],"Ms. Sanjukta Pradhan":["CS"],"Mr. Sunil Kumar Parida":[]},
+  "7A":{"Mr. Anil Kumar Das":["SST"],"Mr. Ganesh Sahoo":["Odia","Sanskrit"],"Mr. Jangyadatta Behera":[],"Mrs. A Mira Rani":[],"Mrs. Lakshmipriya Sahoo":["English"],"Ms. Nandini Pradhan":["Math"],"Ms. Pratibha Padhi":[],"Ms. Pratikshya Das":[],"Mrs. Priyanka Panigrahi":["Science"],"Mr. Radhesyam Khuntia":[],"Mr. Sidhartha Ray":[],"Mrs. Snigdha Jena":["Hindi"],"Mr. Srikant Mallick":[],"Mrs. Subhasmita Jena":[],"Mrs. Usharani Manik":[],"Ms. Sanjukta Pradhan":["CS"],"Mr. Sunil Kumar Parida":[]},
+  "7B":{"Mr. Anil Kumar Das":[],"Mr. Ganesh Sahoo":["Odia","Sanskrit"],"Mr. Jangyadatta Behera":[],"Mrs. A Mira Rani":[],"Mrs. Lakshmipriya Sahoo":["English"],"Ms. Nandini Pradhan":["Math"],"Ms. Pratibha Padhi":[],"Ms. Pratikshya Das":[],"Mrs. Priyanka Panigrahi":["Science"],"Mr. Radhesyam Khuntia":[],"Mr. Sidhartha Ray":[],"Mrs. Snigdha Jena":["Hindi"],"Mr. Srikant Mallick":["SST"],"Mrs. Subhasmita Jena":[],"Mrs. Usharani Manik":[],"Ms. Sanjukta Pradhan":["CS"],"Mr. Sunil Kumar Parida":[]},
+  "8A":{"Mr. Anil Kumar Das":["SST"],"Mr. Ganesh Sahoo":["Sanskrit"],"Mr. Jangyadatta Behera":["Math"],"Mrs. A Mira Rani":[],"Mrs. Lakshmipriya Sahoo":[],"Ms. Nandini Pradhan":[],"Ms. Pratibha Padhi":["Science"],"Ms. Pratikshya Das":["English"],"Mrs. Priyanka Panigrahi":[],"Mr. Radhesyam Khuntia":[],"Mr. Sidhartha Ray":[],"Mrs. Snigdha Jena":["Hindi"],"Mr. Srikant Mallick":[],"Mrs. Subhasmita Jena":["Odia"],"Mrs. Usharani Manik":[],"Ms. Sanjukta Pradhan":["CS"],"Mr. Sunil Kumar Parida":["Science"]},
+  "8B":{"Mr. Anil Kumar Das":["SST"],"Mr. Ganesh Sahoo":["Sanskrit"],"Mr. Jangyadatta Behera":["Math"],"Mrs. A Mira Rani":[],"Mrs. Lakshmipriya Sahoo":[],"Ms. Nandini Pradhan":[],"Ms. Pratibha Padhi":[],"Ms. Pratikshya Das":["English"],"Mrs. Priyanka Panigrahi":["Science"],"Mr. Radhesyam Khuntia":[],"Mr. Sidhartha Ray":[],"Mrs. Snigdha Jena":["Hindi"],"Mr. Srikant Mallick":[],"Mrs. Subhasmita Jena":["Odia"],"Mrs. Usharani Manik":[],"Ms. Sanjukta Pradhan":["CS"],"Mr. Sunil Kumar Parida":["Science"]},
+  "9A":{"Mr. Anil Kumar Das":[],"Mr. Ganesh Sahoo":[],"Mr. Jangyadatta Behera":["Math"],"Mrs. A Mira Rani":[],"Mrs. Lakshmipriya Sahoo":[],"Ms. Nandini Pradhan":[],"Ms. Pratibha Padhi":[],"Ms. Pratikshya Das":["English"],"Mrs. Priyanka Panigrahi":[],"Mr. Radhesyam Khuntia":[],"Mr. Sidhartha Ray":["Science"],"Mrs. Snigdha Jena":[],"Mr. Srikant Mallick":["SST"],"Mrs. Subhasmita Jena":["Odia"],"Mrs. Usharani Manik":["IT"],"Ms. Sanjukta Pradhan":[],"Mr. Sunil Kumar Parida":["Science"]},
+  "9B":{"Mr. Anil Kumar Das":[],"Mr. Ganesh Sahoo":[],"Mr. Jangyadatta Behera":["Math"],"Mrs. A Mira Rani":[],"Mrs. Lakshmipriya Sahoo":[],"Ms. Nandini Pradhan":[],"Ms. Pratibha Padhi":[],"Ms. Pratikshya Das":["English"],"Mrs. Priyanka Panigrahi":[],"Mr. Radhesyam Khuntia":[],"Mr. Sidhartha Ray":["Science"],"Mrs. Snigdha Jena":[],"Mr. Srikant Mallick":["SST"],"Mrs. Subhasmita Jena":["Odia"],"Mrs. Usharani Manik":["IT"],"Ms. Sanjukta Pradhan":[],"Mr. Sunil Kumar Parida":["Science"]},
+  "10A":{"Mr. Anil Kumar Das":["SST"],"Mr. Ganesh Sahoo":[],"Mr. Jangyadatta Behera":[],"Mrs. A Mira Rani":["Math"],"Mrs. Lakshmipriya Sahoo":["English"],"Ms. Nandini Pradhan":[],"Ms. Pratibha Padhi":[],"Ms. Pratikshya Das":[],"Mrs. Priyanka Panigrahi":[],"Mr. Radhesyam Khuntia":[],"Mr. Sidhartha Ray":["Science"],"Mrs. Snigdha Jena":[],"Mr. Srikant Mallick":["SST"],"Mrs. Subhasmita Jena":["Odia"],"Mrs. Usharani Manik":[],"Ms. Sanjukta Pradhan":["CS","IT"],"Mr. Sunil Kumar Parida":["Science"]},
+  "10B":{"Mr. Anil Kumar Das":[],"Mr. Ganesh Sahoo":[],"Mr. Jangyadatta Behera":[],"Mrs. A Mira Rani":["Math"],"Mrs. Lakshmipriya Sahoo":["English"],"Ms. Nandini Pradhan":[],"Ms. Pratibha Padhi":[],"Ms. Pratikshya Das":[],"Mrs. Priyanka Panigrahi":[],"Mr. Radhesyam Khuntia":[],"Mr. Sidhartha Ray":["Science"],"Mrs. Snigdha Jena":[],"Mr. Srikant Mallick":["SST"],"Mrs. Subhasmita Jena":["Odia"],"Mrs. Usharani Manik":[],"Ms. Sanjukta Pradhan":["IT"],"Mr. Sunil Kumar Parida":["Science"]},
+  "11":{"Mr. Anil Kumar Das":[],"Mr. Ganesh Sahoo":[],"Mr. Jangyadatta Behera":[],"Mrs. A Mira Rani":["Math"],"Mrs. Lakshmipriya Sahoo":[],"Ms. Nandini Pradhan":[],"Ms. Pratibha Padhi":["Physics"],"Ms. Pratikshya Das":[],"Mrs. Priyanka Panigrahi":["Chemistry"],"Mr. Radhesyam Khuntia":["English"],"Mr. Sidhartha Ray":["Biology"],"Mrs. Snigdha Jena":[],"Mr. Srikant Mallick":[],"Mrs. Subhasmita Jena":[],"Mrs. Usharani Manik":["IT"],"Ms. Sanjukta Pradhan":[],"Mr. Sunil Kumar Parida":[]},
+  "12":{"Mr. Anil Kumar Das":[],"Mr. Ganesh Sahoo":[],"Mr. Jangyadatta Behera":[],"Mrs. A Mira Rani":["Math"],"Mrs. Lakshmipriya Sahoo":[],"Ms. Nandini Pradhan":[],"Ms. Pratibha Padhi":["Physics"],"Ms. Pratikshya Das":[],"Mrs. Priyanka Panigrahi":["Chemistry"],"Mr. Radhesyam Khuntia":["English"],"Mr. Sidhartha Ray":["Biology"],"Mrs. Snigdha Jena":[],"Mr. Srikant Mallick":[],"Mrs. Subhasmita Jena":[],"Mrs. Usharani Manik":["IT"],"Ms. Sanjukta Pradhan":[],"Mr. Sunil Kumar Parida":[]}
+};
+
+const ROSTER = {"9A":[{"roll":1,"admNo":"046/583","name":"ABHIJNANA DAS","mobile":"9938678258"},{"roll":2,"admNo":"030/567","name":"ADYASHA NAHAK","mobile":"9556876453"},{"roll":3,"admNo":"003/540","name":"ARADHYA MAJHI","mobile":"7815046009"},{"roll":4,"admNo":"009/546","name":"ARPIT KUMAR BEHERA","mobile":"9348692503"},{"roll":5,"admNo":"040/577","name":"ASUTOSH PANIGRAHI","mobile":"9556181860"},{"roll":6,"admNo":"012/549","name":"AYAM KUMAR PRADHAN","mobile":"7608854666"},{"roll":7,"admNo":"041/578","name":"CHELSI SAMAL","mobile":"9438663676"},{"roll":8,"admNo":"022/559","name":"DINESH PRADHAN","mobile":"6370321468"},{"roll":9,"admNo":"050/587","name":"DIPTIMAYEE MAHAPATRA","mobile":"9937567668"},{"roll":10,"admNo":"056/593","name":"G DHANURJYA PRADHAN","mobile":"7606077578"},{"roll":11,"admNo":"014/551","name":"JASMIN PRADHAN","mobile":"9937908745"},{"roll":12,"admNo":"007/544","name":"JYOTIRMAYEE PANDA","mobile":"9668424293"},{"roll":13,"admNo":"017/554","name":"KATYAYANI NAIK","mobile":"9938295741"},{"roll":14,"admNo":"026/563","name":"KIRAN MOHANTY","mobile":"8018293090"},{"roll":15,"admNo":"035/572","name":"LAXMIKANTA NAIK","mobile":"9583097606"},{"roll":16,"admNo":"071/608","name":"NIBEDITA SETHI","mobile":"9668459790"},{"roll":17,"admNo":"037/574","name":"NILI BEHERA","mobile":"9827669757"},{"roll":18,"admNo":"059/596","name":"OMM SHREEYA BEHERA","mobile":"9556778060"},{"roll":19,"admNo":"001/538","name":"PALLAK PRIYADARSINI","mobile":"8895290942"},{"roll":20,"admNo":"019/556","name":"PRITIPRASANNA PATRA","mobile":"9938056478"},{"roll":21,"admNo":"082/619","name":"PRIYANKA PRIYADARSHINI SAHU","mobile":"9938865186"},{"roll":22,"admNo":"089/626","name":"PUNAM PRIYADARSHANI MOHAPATRA","mobile":"9777041410"},{"roll":23,"admNo":"053/590","name":"SADHANA SETHI","mobile":"9937875236"},{"roll":24,"admNo":"024/561","name":"SAILAXMI PRADHAN","mobile":"9937865249"},{"roll":25,"admNo":"034/571","name":"SARASWATI PRADHAN","mobile":"8144734211"},{"roll":26,"admNo":"063/600","name":"SASWAT BEHERA","mobile":"9692756934"},{"roll":27,"admNo":"113/650","name":"SAUMYA RANJAN PAGADA","mobile":"6352178651"},{"roll":28,"admNo":"005/542","name":"SIBAPRASAD SETHI","mobile":"8596997271"},{"roll":29,"admNo":"011/548","name":"SMRUTI SANCHITA BISOYI","mobile":"9777088768"},{"roll":30,"admNo":"028/565","name":"SNIGDHARANI BEHERA","mobile":"7609884772"},{"roll":31,"admNo":"075/612","name":"SRIYANKA PRADHAN","mobile":"7855967002"},{"roll":32,"admNo":"073/610","name":"SRUTIRANI NAIK","mobile":"9938774340"},{"roll":33,"admNo":"088/625","name":"SUBHAJIT NAIK","mobile":"8658996100"},{"roll":34,"admNo":"066/603","name":"SURYANSHU RATH","mobile":"9938986813"},{"roll":35,"admNo":"067/604","name":"SUSHREE SONAKSHI PRADHAN","mobile":"9861114530"},{"roll":36,"admNo":"081/618","name":"TANMAYA KUMAR BEHERA","mobile":"9937876900"},{"roll":37,"admNo":"021/558","name":"TANMAYEE GOUDA","mobile":"9692399720"},{"roll":38,"admNo":"077/614","name":"TULASI NAIK","mobile":"8457941729"},{"roll":39,"admNo":"045/582","name":"TWINKLE BEHERA","mobile":"6372490494"}],"9B":[{"roll":1,"admNo":"112/649","name":"ADITYA KUMAR NAIK","mobile":"9171738178"},{"roll":2,"admNo":"070/607","name":"AISHA MAHARANA","mobile":"9777168128"},{"roll":3,"admNo":"044/581","name":"AKANKSHI MOHAPATRA","mobile":"9090435989"},{"roll":4,"admNo":"016/553","name":"ANITA BISOI","mobile":"8144326128"},{"roll":5,"admNo":"051/588","name":"ARPITA BISWAL","mobile":"9438750516"},{"roll":6,"admNo":"029/566","name":"BAISHALI DASH","mobile":"8847816736"},{"roll":7,"admNo":"127/664","name":"BISWA BANDITA SAHU","mobile":"9938131319"},{"roll":8,"admNo":"055/592","name":"BRAJA KISHOR PATRA","mobile":"7609880750"},{"roll":9,"admNo":"076/613","name":"GAYATRI SAHU","mobile":"9556905212"},{"roll":10,"admNo":"062/598","name":"HIMANSU SEKHAR BEHERA","mobile":"8984962791"},{"roll":11,"admNo":"074/611","name":"KAJAL NAIK","mobile":"6371090734"},{"roll":12,"admNo":"072/609","name":"KHUSI SAHU","mobile":"7751888747"},{"roll":13,"admNo":"015/552","name":"KRISHNARAJ MALLICK","mobile":"8895598372"},{"roll":14,"admNo":"027/564","name":"LAXMI NAYAK","mobile":"9777485901"},{"roll":15,"admNo":"031/568","name":"LIPUN SWAIN","mobile":"8260958608"},{"roll":16,"admNo":"036/573","name":"LISARANI CHOUDHURY","mobile":"9583795635"},{"roll":17,"admNo":"065/602","name":"MADHUSMITA POLAI","mobile":"9178828355"},{"roll":18,"admNo":"004/541","name":"MANASMITA SWAIN","mobile":"9078692223"},{"roll":19,"admNo":"010/547","name":"MRUTYUNJAYA PANDA","mobile":"9937273780"},{"roll":20,"admNo":"032/569","name":"NIRUPAMA NAIK","mobile":"6818291546"},{"roll":21,"admNo":"006/543","name":"NITESH KAR","mobile":"9437773529"},{"roll":22,"admNo":"080/617","name":"PAYAL DAKUA","mobile":"9937560726"},{"roll":23,"admNo":"083/620","name":"PRAKRUTI PRIYA BISOYI","mobile":"7684830350"},{"roll":24,"admNo":"068/605","name":"PRIYANSHU GOUDA","mobile":"9178729498"},{"roll":25,"admNo":"008/545","name":"PUSPANJALI SAHU","mobile":"7381647255"},{"roll":26,"admNo":"013/550","name":"RACHITA MAHANKUDA","mobile":"8018946735"},{"roll":27,"admNo":"049/586","name":"RESHMA PRADHAN","mobile":"9692693354"},{"roll":28,"admNo":"054/591","name":"RIMSHA PANI","mobile":"8658666728"},{"roll":29,"admNo":"084/621","name":"S SWARIT KUMAR PATRO","mobile":"9438469420"},{"roll":30,"admNo":"025/562","name":"SAGARIKA NAYAK","mobile":"7751986932"},{"roll":31,"admNo":"097/634","name":"SALINI CHHATAI","mobile":"9040280686"},{"roll":32,"admNo":"002/539","name":"SANJANA SENAPATI","mobile":"9054128699"},{"roll":33,"admNo":"023/560","name":"SANVI SRIYA PANDA","mobile":"8455079474"},{"roll":34,"admNo":"038/575","name":"SNEHA GOUDA","mobile":"9238548870"},{"roll":35,"admNo":"114/651","name":"SUBHAM BEHERA","mobile":"9777085043"},{"roll":36,"admNo":"064/601","name":"SUBHRANSHU RATH","mobile":"9928132958"},{"roll":37,"admNo":"018/555","name":"SUCHITRA NAYAK","mobile":"9938803551"},{"roll":38,"admNo":"039/576","name":"SWASTIK KUMAR GOUDA","mobile":"8455912660"},{"roll":39,"admNo":"116/653","name":"TANMAYA POLAI","mobile":"7894556106"},{"roll":40,"admNo":"020/557","name":"TANMAYA PRADHAN","mobile":"8144326712"}],"7A":[{"roll":1,"admNo":"047/800","name":"ADITYA BEHERA","mobile":"8249543806"},{"roll":2,"admNo":"063/816","name":"AMLAN BISWAL","mobile":"9438750516"},{"roll":3,"admNo":"033/786","name":"ANANDESWAR MAHAPATRA","mobile":"9556611353"},{"roll":4,"admNo":"058/811","name":"ANKIT KUMAR NAYAK","mobile":"8144004150"},{"roll":5,"admNo":"020/773","name":"ASISH KUMAR GOUDA","mobile":"7609812273"},{"roll":6,"admNo":"045/798","name":"BHUMI BISOYI","mobile":"9078419716"},{"roll":7,"admNo":"054/807","name":"BIDUSMITA NAYAK","mobile":"7608842637"},{"roll":8,"admNo":"065/818","name":"BIJAYALAXMI BEHERA","mobile":"8018287396"},{"roll":9,"admNo":"051/804","name":"BIKASH KUMAR SETHI","mobile":"7077909340"},{"roll":10,"admNo":"030/783","name":"BISWAJIT SAHU","mobile":"9040558775"},{"roll":11,"admNo":"057/810","name":"CHANDAN PRADHAN","mobile":"9692300640"},{"roll":12,"admNo":"072/825","name":"DEBASISH SETHI","mobile":"8455860857"},{"roll":13,"admNo":"032/785","name":"DEEPTIMAYI NAYAK","mobile":"8018405429"},{"roll":14,"admNo":"050/803","name":"DIPALI SAHU","mobile":"9178448299"},{"roll":15,"admNo":"018/771","name":"EVANGELINE NAYAK","mobile":"9348070818"},{"roll":16,"admNo":"019/772","name":"G PAYAL PRADHAN","mobile":"9938105349"},{"roll":17,"admNo":"038/791","name":"HIMANI NAYAK","mobile":"9556903417"},{"roll":18,"admNo":"079/832","name":"KANHA SETHI","mobile":"7681804541"},{"roll":19,"admNo":"059/812","name":"N BISWARANJAN PRADHAN","mobile":"9337246796"},{"roll":20,"admNo":"028/781","name":"PAYAL BEHERA","mobile":"9078833879"},{"roll":21,"admNo":"075/828","name":"PRACHI RANI NAIK","mobile":"9668377932"},{"roll":22,"admNo":"062/815","name":"PRADYUMNA PRADHAN","mobile":"7436900340"},{"roll":23,"admNo":"035/788","name":"PRITAM PRADHAN","mobile":"9938211427"},{"roll":24,"admNo":"056/809","name":"RAJA SETHY","mobile":"8280533774"},{"roll":25,"admNo":"070/823","name":"RITESH KUMAR PRADHAN","mobile":"7894071727"},{"roll":26,"admNo":"031/784","name":"S POOJIT RAO","mobile":"9599223731"},{"roll":27,"admNo":"053/806","name":"SHASHWAT SHEKHAR MALLIK","mobile":"9938443538"},{"roll":28,"admNo":"001/754","name":"SMRUTI BEHERA","mobile":"9937953808"},{"roll":29,"admNo":"017/770","name":"SOM SEKHAR SETHI","mobile":"9777110113"},{"roll":30,"admNo":"023/776","name":"SOUMYA RANI PRADHAN","mobile":"7894612381"},{"roll":31,"admNo":"073/826","name":"SUBHALAXMI PRADHAN","mobile":"7894998580"},{"roll":32,"admNo":"060/813","name":"SUBHASHREE SETHI","mobile":"8511095794"},{"roll":33,"admNo":"002/755","name":"SUDHANSU PATRO","mobile":"9078924824"},{"roll":34,"admNo":"043/796","name":"SURANJANA PADHY","mobile":"9178489850"},{"roll":35,"admNo":"007/760","name":"SURYA NARAYAN PANDA","mobile":"9668424293"},{"roll":36,"admNo":"069/822","name":"SWAGAT KUMAR SAHU","mobile":"8780389329"},{"roll":37,"admNo":"052/805","name":"SWARNALATA SAHU","mobile":"8144013940"},{"roll":38,"admNo":"022/775","name":"SWAYAM PRABHA BEHERA","mobile":"7504173685"}],"7B":[{"roll":1,"admNo":"021/774","name":"ADITYA PRADHAN","mobile":"7735995478"},{"roll":2,"admNo":"039/792","name":"ADYASHA KUMARI GOUDA","mobile":"9668149360"},{"roll":3,"admNo":"009/762","name":"AREN SETHI","mobile":"9662031951"},{"roll":4,"admNo":"064/817","name":"ARUSHI PRADHAN","mobile":"9348087132"},{"roll":5,"admNo":"008/761","name":"ASHUTOSH PRADHAN","mobile":"7606036561"},{"roll":6,"admNo":"046/799","name":"ATHARBA SWAIN","mobile":"9668455725"},{"roll":7,"admNo":"006/759","name":"AYUSHMAN MAHAPATRA","mobile":"9438464586"},{"roll":8,"admNo":"077/830","name":"BAISTNABI RATH","mobile":"7751878068"},{"roll":9,"admNo":"074/827","name":"BARSA BHOI","mobile":"9668148607"},{"roll":10,"admNo":"024/777","name":"D SUBHALAXMI PRADHAN","mobile":"5829320097"},{"roll":11,"admNo":"036/789","name":"DEBASHISH NAIK","mobile":"8249087347"},{"roll":12,"admNo":"027/780","name":"DINESH DALEI","mobile":"9777502484"},{"roll":13,"admNo":"003/756","name":"DIPTIMAYEE PRADHAN","mobile":"6370175234"},{"roll":14,"admNo":"037/790","name":"HIMANSHU PRASAD MALLIK","mobile":"9938125181"},{"roll":15,"admNo":"055/808","name":"NANDINI SETHY","mobile":"8260544493"},{"roll":16,"admNo":"078/831","name":"PAYAL NAYAK","mobile":"9827959510"},{"roll":17,"admNo":"016/769","name":"PEEYUSH PRIYADARSHI","mobile":"9776574738"},{"roll":18,"admNo":"034/787","name":"PRASAD NILAKANTHA NAYAK","mobile":"9439093560"},{"roll":19,"admNo":"015/768","name":"PRINCE BHUYAN","mobile":"9937105226"},{"roll":20,"admNo":"080/833","name":"PRITIRAJ BEHERA","mobile":"7327875740"},{"roll":21,"admNo":"004/757","name":"RAAZ PRADHAN","mobile":"9438646816"},{"roll":22,"admNo":"067/820","name":"RAJ LAXMI BEHERA","mobile":"7609883099"},{"roll":23,"admNo":"012/765","name":"RITESH KUMAR PRADHAN","mobile":"9938946611"},{"roll":24,"admNo":"011/764","name":"RUCHIKA BISHOYI","mobile":"9668474874"},{"roll":25,"admNo":"042/795","name":"SAIBA SETHI","mobile":"7681066695"},{"roll":26,"admNo":"076/829","name":"SAMBIT NAIK","mobile":"9078531392"},{"roll":27,"admNo":"026/779","name":"SANJIT KUMAR SAHU","mobile":"9556906143"},{"roll":28,"admNo":"029/782","name":"SASMITA JENA","mobile":"8458015901"},{"roll":29,"admNo":"014/767","name":"SAUMYA SETHY","mobile":"9668855402"},{"roll":30,"admNo":"071/824","name":"SIBAN SAHANI","mobile":"8456891553"},{"roll":31,"admNo":"041/794","name":"SMRUTIPRIYA GOUDA","mobile":"7735974049"},{"roll":33,"admNo":"049/802","name":"SUBHA SHREE PRADHAN","mobile":"9938567641"},{"roll":34,"admNo":"010/763","name":"SUDIPTA BEHERA","mobile":"7684848763"},{"roll":35,"admNo":"025/778","name":"SWARNAPRABHA PRADHAN","mobile":"9777377076"},{"roll":36,"admNo":"005/758","name":"SWAYAMBHU PRASAD SAHU","mobile":"9938266099"},{"roll":37,"admNo":"061/814","name":"SWAYAMSIKHA NAYAK","mobile":"8658199241"},{"roll":38,"admNo":"013/766","name":"SWETA PUJA PRADHAN","mobile":"9178029142"}],"8A":[{"roll":1,"admNo":"050/716","name":"A KRITIKA PATRA","mobile":"9437721947"},{"roll":2,"admNo":"038/704","name":"ABINASH NAYAK","mobile":"7048227226"},{"roll":3,"admNo":"009/675","name":"ADITYA SETHI","mobile":"8018831402"},{"roll":4,"admNo":"010/676","name":"ADYASA SASMAL","mobile":"8249569981"},{"roll":5,"admNo":"062/728","name":"AKAPATI ANWESHA PATRA","mobile":"9937569800"},{"roll":6,"admNo":"053/719","name":"AKSHARA TRIPATHY","mobile":"6371425685"},{"roll":7,"admNo":"070/736","name":"AMIT SWAIN","mobile":"8984185686"},{"roll":8,"admNo":"066/732","name":"AMLAN KUMAR PANDA","mobile":"7894933548"},{"roll":9,"admNo":"025/691","name":"ANKITA PRADHAN","mobile":"7894443584"},{"roll":10,"admNo":"020/686","name":"ANUSKA PRADHAN","mobile":"7894616031"},{"roll":11,"admNo":"001/667","name":"ARPITA NAYAK","mobile":"9937188998"},{"roll":12,"admNo":"026/692","name":"ASUTOSH PANI","mobile":"9937329221"},{"roll":13,"admNo":"013/679","name":"DIBYANKA SAHU","mobile":"7609055416"},{"roll":14,"admNo":"003/669","name":"KIRTI MAHARANA","mobile":"9937247776"},{"roll":15,"admNo":"078/744","name":"MAMUNI BHOI","mobile":"8144796528"},{"roll":16,"admNo":"006/672","name":"MONALISHA PANDA","mobile":"9938469676"},{"roll":17,"admNo":"072/738","name":"OMM KUMAR SETHY","mobile":"9361670061"},{"roll":18,"admNo":"073/739","name":"PRANAYA PRADHAN","mobile":"9556620445"},{"roll":19,"admNo":"054/720","name":"PRATYUSH KUMAR PARIDA","mobile":"9937881961"},{"roll":20,"admNo":"036/702","name":"RAKESH PRADHAN","mobile":"8144931876"},{"roll":21,"admNo":"069/735","name":"RAMESWAREE PANDA","mobile":"7847882877"},{"roll":22,"admNo":"034/700","name":"SAIRAM PRADHAN","mobile":"9938830041"},{"roll":23,"admNo":"040/706","name":"SAISWARI MISHRA","mobile":"9777933876"},{"roll":24,"admNo":"046/712","name":"SAMBHUNATH SETHI","mobile":"7682989995"},{"roll":25,"admNo":"017/683","name":"SATYAM CHOUDHURY","mobile":"7894125211"},{"roll":26,"admNo":"014/680","name":"SIBANANDA ROUT","mobile":"9556903601"},{"roll":27,"admNo":"060/726","name":"SMARANIKA PANIGRAHI","mobile":"8114770149"},{"roll":28,"admNo":"048/714","name":"SNEHA BEHERA","mobile":"9827800803"},{"roll":29,"admNo":"058/724","name":"SRIYA NAYAK","mobile":"9439517854"},{"roll":30,"admNo":"033/699","name":"SRUTI SETHI","mobile":"9178729359"},{"roll":31,"admNo":"030/696","name":"SUBHALAXMI BEHERA","mobile":"9938246047"},{"roll":32,"admNo":"029/695","name":"SUBHAM GOUDA","mobile":"7356145932"},{"roll":33,"admNo":"044/710","name":"SUBHAM KUMAR NAIK","mobile":"9078047734"},{"roll":34,"admNo":"056/722","name":"SUMAN SETHI","mobile":"8458055114"},{"roll":35,"admNo":"019/685","name":"SWAGATA NAIK","mobile":"9078531392"},{"roll":36,"admNo":"065/731","name":"SWAGATIKA SETHI","mobile":"9894804324"},{"roll":37,"admNo":"004/670","name":"TANMAYA KUMAR MISHRA","mobile":"7735625078"}],"8B":[{"roll":1,"admNo":"071/737","name":"ADARSHA KUMAR NAYAK","mobile":"7600396912"},{"roll":2,"admNo":"052/718","name":"ASISH PRADHAN","mobile":"9348612097"},{"roll":3,"admNo":"037/703","name":"AYUSH KUMAR SAHU","mobile":"8658416080"},{"roll":4,"admNo":"018/684","name":"AYUSHMAN SAHU","mobile":"9777121502"},{"roll":5,"admNo":"076/742","name":"B KESABA RANJAN BEHERA","mobile":"8456991009"},{"roll":6,"admNo":"021/687","name":"BIKASH KUMAR PRADHAN","mobile":"9938107689"},{"roll":7,"admNo":"051/717","name":"BISHNU PRIYA PRADHAN","mobile":"9777124530"},{"roll":8,"admNo":"043/709","name":"CHINMAY SATYAPRAGYN","mobile":"8018076102"},{"roll":9,"admNo":"016/682","name":"CHINMAYEE MISHRA","mobile":"9778183905"},{"roll":10,"admNo":"064/730","name":"D SAISHREE DORA","mobile":"9777425665"},{"roll":11,"admNo":"001/677","name":"DEBADATTA NAYAK","mobile":"7077379173"},{"roll":12,"admNo":"068/734","name":"DEBASMITA PRADHAN","mobile":"9778214602"},{"roll":13,"admNo":"080/746","name":"DEEPAK KUMAR NAIK","mobile":"7708189924"},{"roll":14,"admNo":"074/740","name":"DEEPTIRANI BEHERA","mobile":"9178540923"},{"roll":15,"admNo":"024/690","name":"DIBYAJYOTI PATRA","mobile":"8093879096"},{"roll":16,"admNo":"008/674","name":"K LAXMIBAYI PATRA","mobile":"9937252206"},{"roll":17,"admNo":"031/697","name":"K SNEHARANI PATRA","mobile":"9938131325"},{"roll":18,"admNo":"063/729","name":"KULDEEP MAHARANA","mobile":"8280025491"},{"roll":19,"admNo":"035/701","name":"KUMAR AYUSH SETHI","mobile":"7735724289"},{"roll":20,"admNo":"047/713","name":"MADHUSMITA NAYAK","mobile":"6371805578"},{"roll":21,"admNo":"032/698","name":"NITESH KUMAR ROUT","mobile":"8895584433"},{"roll":22,"admNo":"079/744","name":"PABITRA KUMAR SETHI","mobile":"9777474412"},{"roll":23,"admNo":"067/733","name":"PAPUN SETHI","mobile":"7609884321"},{"roll":24,"admNo":"012/678","name":"PRARTHIKA PAYOSINI","mobile":"7894157002"},{"roll":25,"admNo":"023/689","name":"PREETIMAYEE PRADHAN","mobile":"7853048490"},{"roll":26,"admNo":"055/721","name":"PREM PRAKASH PRADHAN","mobile":"9937638941"},{"roll":27,"admNo":"002/668","name":"PUJA RANI NAYAK","mobile":"7605999466"},{"roll":28,"admNo":"028/694","name":"RADHAKANTA PRADHAN","mobile":"9777064392"},{"roll":29,"admNo":"045/711","name":"SARTHAK SRIMAN NAYAK","mobile":"9777677040"},{"roll":30,"admNo":"039/705","name":"SHALINI KUMARI SAHU","mobile":"9437722125"},{"roll":31,"admNo":"041/707","name":"SOHAN KUMAR PRADHAN","mobile":"9937835647"},{"roll":32,"admNo":"061/727","name":"SONALI JENA","mobile":"9668700866"},{"roll":33,"admNo":"059/725","name":"SUBHALAXMI SETHI","mobile":"8658658923"},{"roll":34,"admNo":"007/673","name":"SUBHAM PRADHAN","mobile":"9090907533"},{"roll":35,"admNo":"015/681","name":"SUDHANSU SAHU","mobile":"9658235186"},{"roll":36,"admNo":"005/671","name":"SUSHRI SHREYANSI NAYAK","mobile":"9938814552"}],"10A":[{"roll":1,"admNo":"050/491","name":"AADYASHA PRIYADARSINI","mobile":"9439126489"},{"roll":2,"admNo":"011/451","name":"ABHIJEET BEHERA","mobile":"9238656844"},{"roll":3,"admNo":"041/482","name":"ADYASHA NAYAK","mobile":"9777969709"},{"roll":4,"admNo":"048/489","name":"AKASH NAIK","mobile":"9894453898"},{"roll":5,"admNo":"058/499","name":"ANANYA ANWESHA PRADHAN","mobile":"8458040575"},{"roll":6,"admNo":"009/450","name":"ANANYA PRADHAN","mobile":"8144560993"},{"roll":7,"admNo":"025/466","name":"ANKITA PANDA","mobile":"9583963735"},{"roll":8,"admNo":"038/479","name":"ARPITA KUMARI MAHARANA","mobile":"8018253555"},{"roll":9,"admNo":"028/469","name":"BARSHA RANI PRADHAN","mobile":"9348185091"},{"roll":10,"admNo":"079/520","name":"BIDUSMITA DASH","mobile":"7326888721"},{"roll":11,"admNo":"081/522","name":"CHINMAYEE NAYAK","mobile":"9777718225"},{"roll":12,"admNo":"068/509","name":"DIPTIMAYEE SATAPATHY","mobile":"7750060400"},{"roll":13,"admNo":"073/514","name":"GOPAL RANA","mobile":"8018707300"},{"roll":14,"admNo":"005/446","name":"GYANAMAYEE PANI","mobile":"9937650423"},{"roll":15,"admNo":"061/502","name":"HARAPRIYA PRADHAN","mobile":"9938788256"},{"roll":16,"admNo":"077/518","name":"JHANSI SETHI","mobile":"9938013817"},{"roll":17,"admNo":"029/470","name":"KISAN PRADHAN","mobile":"9668696645"},{"roll":18,"admNo":"0085/526","name":"MAYANKA KUMAR PANDA","mobile":"9556612123"},{"roll":19,"admNo":"075/516","name":"PRACHI SAHU","mobile":"9938567268"},{"roll":20,"admNo":"017/458","name":"PRACHITA PRADHAN","mobile":"9556988273"},{"roll":21,"admNo":"069/510","name":"PRIYABRATA PRADHAN","mobile":"9438296206"},{"roll":22,"admNo":"083/524","name":"PRIYANKA GOUDA","mobile":"7205219159"},{"roll":23,"admNo":"0086/527","name":"RITWIK RIDDHIMAN","mobile":"9437772477"},{"roll":24,"admNo":"071/512","name":"ROSAN NANDA","mobile":"9937258785"},{"roll":25,"admNo":"040/481","name":"RUDRA NARAYAN PATTANAIK","mobile":"6371050985"},{"roll":26,"admNo":"004/445","name":"SAIMAN PATRA","mobile":"9437231600"},{"roll":27,"admNo":"064/505","name":"SAI SIMRAN SAHU","mobile":"9437986093"},{"roll":28,"admNo":"022/463","name":"SAMARPITA SAHU","mobile":"9238545870"},{"roll":29,"admNo":"013/454","name":"SHRADHA SNEHANJALEE","mobile":"9338225675"},{"roll":30,"admNo":"065/506","name":"SIBANI NAIK","mobile":"9556557909"},{"roll":31,"admNo":"045/486","name":"SMITA RANI NAYAK","mobile":"8144967110"},{"roll":32,"admNo":"0095/536","name":"SONALIKA SWAIN","mobile":"9937836622"},{"roll":33,"admNo":"054/495","name":"SUBHALAGNA KARA","mobile":"9348665591"},{"roll":34,"admNo":"023/464","name":"SUBRATA MISHRA","mobile":"7749813760"},{"roll":35,"admNo":"033/474","name":"SUNEKSHA BISHOYEE","mobile":"7991060678"},{"roll":36,"admNo":"046/487","name":"SWAGATIKA PRADHAN","mobile":"8280552589"},{"roll":37,"admNo":"015/456","name":"TARPIT TEJASWAN","mobile":"6370898409"}],"10B":[{"roll":1,"admNo":"0096/537","name":"ABHILIPSHA PARIDA","mobile":"7853060935"},{"roll":2,"admNo":"016/457","name":"ABHIPSA BEHERA","mobile":"6370154955"},{"roll":3,"admNo":"049/490","name":"ABHIPSA KUMARI SWAIN","mobile":"7681081441"},{"roll":4,"admNo":"032/473","name":"AMRITA KUMARI PADHI","mobile":"6370063678"},{"roll":5,"admNo":"020/461","name":"ANSHUMAN PRADHAN","mobile":"7751926828"},{"roll":6,"admNo":"027/468","name":"ARPITA PRADHAN","mobile":"9938551482"},{"roll":7,"admNo":"024/465","name":"ASTA ADYASHREE PRADHAN","mobile":"9668394029"},{"roll":8,"admNo":"002/443","name":"BABU PRADHAN","mobile":"7809629790"},{"roll":9,"admNo":"080/521","name":"BARSARANI BARIK","mobile":"9439156372"},{"roll":10,"admNo":"089/530","name":"HARAPRIYA PRADHAN","mobile":"7681064926"},{"roll":11,"admNo":"053/494","name":"HIMASHREE KHANDAI","mobile":"9938825132"},{"roll":12,"admNo":"055/496","name":"ITISHREE NAYAK","mobile":"6371562462"},{"roll":13,"admNo":"014/455","name":"JNYADEEP PRADHAN","mobile":"7205854853"},{"roll":14,"admNo":"039/480","name":"KHUSHI SETHI","mobile":"9348808595"},{"roll":15,"admNo":"074/515","name":"LOVELY BISWAL","mobile":"8128766475"},{"roll":16,"admNo":"030/471","name":"MONALISHA SETHY","mobile":"7846830686"},{"roll":17,"admNo":"026/467","name":"NIRANJAN SETHI","mobile":"8530971161"},{"roll":18,"admNo":"044/485","name":"PRABHATI PRADHAN","mobile":"9827810047"},{"roll":19,"admNo":"003/444","name":"PRACHY SAHU","mobile":"8018942170"},{"roll":20,"admNo":"057/498","name":"PRAGATI RANI BISWAL","mobile":"6371088525"},{"roll":21,"admNo":"070/511","name":"PRITAM PRADHAN","mobile":"9692332650"},{"roll":22,"admNo":"021/462","name":"PRIYATAMA LENKA","mobile":"9178614148"},{"roll":23,"admNo":"051/492","name":"RANI BEHERA","mobile":"7077752134"},{"roll":24,"admNo":"066/507","name":"RUDRA PRASAD SAHU","mobile":"9178837075"},{"roll":25,"admNo":"063/504","name":"RUTUPARNA MAHAPATRA","mobile":"9937908796"},{"roll":26,"admNo":"067/508","name":"SAISWARI BEHERA","mobile":"8763252426"},{"roll":27,"admNo":"007/448","name":"SATWIK KUMAR MOHINI","mobile":"9937327221"},{"roll":28,"admNo":"010/451","name":"SHREYANSH DASH","mobile":"9938122860"},{"roll":29,"admNo":"012/453","name":"SIBANI NAIK","mobile":"8610228132"},{"roll":30,"admNo":"060/501","name":"SOHANA BEHERA","mobile":"7325870359"},{"roll":31,"admNo":"035/476","name":"SRUSTI PRAGYAN DAKUA","mobile":"9437374782"},{"roll":32,"admNo":"084/525","name":"SUBHALAXMI PRADHAN","mobile":"9692776015"},{"roll":33,"admNo":"059/500","name":"SUBHAM SETHI","mobile":"7735174083"},{"roll":34,"admNo":"043/484","name":"SUBHASHREE NAIK","mobile":"8144237603"},{"roll":35,"admNo":"076/517","name":"SUBHASMITA MISHRA","mobile":"6370679357"},{"roll":36,"admNo":"082/523","name":"SUSHREE SATAPATHY","mobile":"7377823578"}],"12":[{"roll":1,"admNo":"023/279","name":"ALOK KUMAR SETHI","mobile":"9937875236"},{"roll":2,"admNo":"006/262","name":"AYUSHI ABHILIPSA","mobile":"8018777508"},{"roll":3,"admNo":"319/63","name":"D SIBARAM PRADHAN","mobile":"7894416842"},{"roll":4,"admNo":"035/291","name":"KANHA BISOYI","mobile":"8457837906"},{"roll":5,"admNo":"037/293","name":"MADHUSUDAN NAYAK","mobile":"7077379173"},{"roll":6,"admNo":"082/835","name":"MILAN KUMARI NAYAK","mobile":"7873523644"},{"roll":7,"admNo":"075/331","name":"MUKTIREKHA SENAPATI","mobile":"7894345886"},{"roll":8,"admNo":"084/340","name":"OM PRAKASH SAHU","mobile":"7852972513"},{"roll":9,"admNo":"019/460","name":"PADMARAJ NAIK","mobile":"9178600114"},{"roll":10,"admNo":"0091/532","name":"PRATIKSHYA PRIYADARSINI SAHOO","mobile":"8763119717"},{"roll":11,"admNo":"084/837","name":"PRAVEER KUMAR SETHI","mobile":"8660455410"},{"roll":12,"admNo":"128/665","name":"PRIYANKA PRADHAN","mobile":"9938312875"},{"roll":13,"admNo":"024/280","name":"RAJALAXMI PRADHAN","mobile":"6370492323"},{"roll":14,"admNo":"007/263","name":"SAIRAM SATHUA","mobile":"7077124372"},{"roll":15,"admNo":"083/836","name":"SAMEER RANJAN SAHU","mobile":"9777365695"},{"roll":16,"admNo":"015/271","name":"SANGHAMITRA PAL","mobile":"9438828152"},{"roll":17,"admNo":"019/275","name":"SIBA PRASAD PANI","mobile":"9556925499"},{"roll":18,"admNo":"001/257","name":"SILPASWARUPA PATRA","mobile":"9938056478"},{"roll":19,"admNo":"081/337","name":"SOUMYA RANJAN PRADHAN","mobile":"9777062030"},{"roll":20,"admNo":"017/273","name":"SREYANSHU MAHAPATRA","mobile":"7991015565"},{"roll":21,"admNo":"036/292","name":"SRUTIRANI BISWAL","mobile":"6372508813"},{"roll":22,"admNo":"048/304","name":"SUCHITRA RAUTA","mobile":"6372728107"},{"roll":23,"admNo":"002/258","name":"SUPRIYARANI SETHI","mobile":"9937571801"},{"roll":24,"admNo":"025/281","name":"SURAJA KUMARI BEHERA","mobile":"6370492323"},{"roll":25,"admNo":"085/838","name":"SWASTIKA PATTNAYAK","mobile":"9861951096"},{"roll":26,"admNo":"0086/342","name":"TWINKLE RANI TRIPATHY","mobile":"9937680021"}],"6A":[],"6B":[],"11":[]};
+
+// ── STATE ────────────────────────────────────
+let currentRole = 'teacher';
+let statusMap = {}, remarksMap = {};
+let allData = [], sessionMap = {};
+
+// ── LOGIN ────────────────────────────────────
+function selectRole(role){
+  currentRole = role;
+  document.getElementById('tabTeacher').classList.toggle('active', role==='teacher');
+  document.getElementById('tabPrincipal').classList.toggle('active', role==='principal');
+  document.getElementById('pwdInput').value='';
+  document.getElementById('loginMsg').innerHTML='';
+}
+
+function doLogin(){
+  const pwd = document.getElementById('pwdInput').value;
+  if(currentRole==='teacher' && pwd===TEACHER_PWD){
+    showScreen('teacher');
+    initTeacherForm();
+  } else if(currentRole==='principal' && pwd===PRINCIPAL_PWD){
+    showScreen('principal');
+    initDash();
+    loadData();
+  } else {
+    document.getElementById('loginMsg').innerHTML='<div class="alert alert-error">Incorrect password. Please try again.</div>';
+  }
+}
+
+function showScreen(role){
+  document.getElementById('screenLogin').style.display='none';
+  document.getElementById('screenTeacher').style.display = role==='teacher'?'block':'none';
+  document.getElementById('screenPrincipal').style.display = role==='principal'?'block':'none';
+  document.getElementById('logoutBtn').style.display='inline-block';
+  document.getElementById('headerInfo').innerHTML =
+    (role==='teacher'?'👩‍🏫 Teacher View · ':'🏫 Principal View · ') +
+    new Date().toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}) +
+    ' <button class="logout-btn" onclick="logout()">Logout</button>';
+}
+
+function logout(){
+  document.getElementById('screenLogin').style.display='flex';
+  document.getElementById('screenTeacher').style.display='none';
+  document.getElementById('screenPrincipal').style.display='none';
+  document.getElementById('headerInfo').innerHTML='';
+  document.getElementById('pwdInput').value='';
+  document.getElementById('loginMsg').innerHTML='';
+}
+
+// ── TEACHER FORM ─────────────────────────────
+function initTeacherForm(){
+  document.getElementById('selDate').value = new Date().toISOString().split('T')[0];
+  const tSel=document.getElementById('selTeacher');
+  if(tSel.options.length<=1){
+    TEACHERS.forEach(t=>{const o=document.createElement('option');o.value=t;o.textContent=t;tSel.appendChild(o);});
+  }
+  const cSel=document.getElementById('selClass');
+  if(cSel.options.length<=1){
+    CLASS_ORDER.forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent='Class '+c;cSel.appendChild(o);});
+  }
+}
+
+function updateSubjects(){
+  const teacher=document.getElementById('selTeacher').value;
+  const cls=document.getElementById('selClass').value;
+  const subSel=document.getElementById('selSubject');
+  subSel.innerHTML='';
+  if(!teacher||!cls){
+    subSel.innerHTML='<option value="">-- Select Teacher & Class first --</option>';
+    document.getElementById('rosterCard').style.display='none';
+    document.getElementById('btnSubmit').style.display='none';
+    return;
+  }
+  const subjects=(CLASS_SUBJECTS[cls]&&CLASS_SUBJECTS[cls][teacher])||[];
+  if(!subjects.length){
+    subSel.innerHTML='<option value="">No subjects assigned for this class</option>';
+    document.getElementById('rosterCard').style.display='none';
+    document.getElementById('btnSubmit').style.display='none';
+  } else {
+    subSel.innerHTML='<option value="">-- Select Subject --</option>';
+    subjects.forEach(s=>{const o=document.createElement('option');o.value=s;o.textContent=s;subSel.appendChild(o);});
+    loadRoster(cls);
+  }
+}
+
+function loadRoster(cls){
+  const students=ROSTER[cls]||[];
+  statusMap={};remarksMap={};
+  const tbody=document.getElementById('rosterBody');
+  const card=document.getElementById('rosterCard');
+  card.style.display='block';
+  if(!students.length){
+    tbody.innerHTML='';
+    document.getElementById('rosterMsg').innerHTML='<div class="alert alert-info">⚠️ No students added yet for this class. Roster will be updated soon.</div>';
+    document.getElementById('btnSubmit').style.display='none';
+    updateSummary([]);
+    return;
+  }
+  document.getElementById('rosterMsg').innerHTML='';
+  document.getElementById('btnSubmit').style.display='block';
+  tbody.innerHTML=students.map(s=>`
+    <tr id="row_${s.roll}">
+      <td style="color:#64748b;font-weight:600">${s.roll}</td>
+      <td><div style="font-weight:600;color:#1e293b;font-size:.83rem">${s.name}</div>
+          <div style="font-size:.7rem;color:#94a3b8">${s.admNo}</div></td>
+      <td><div class="status-btns">
+        <button class="btn-status btn-ok" id="ok_${s.roll}" onclick="setStatus(${s.roll},'✅')">✅</button>
+        <button class="btn-status btn-no" id="no_${s.roll}" onclick="setStatus(${s.roll},'❌')">❌</button>
+      </div></td>
+      <td><input class="remarks-input" type="text" id="rem_${s.roll}" placeholder="Remarks..." oninput="remarksMap[${s.roll}]=this.value"></td>
+    </tr>`).join('');
+  updateSummary(students);
+}
+
+function setStatus(roll,val){
+  statusMap[roll]=val;
+  document.getElementById('ok_'+roll).classList.toggle('active',val==='✅');
+  document.getElementById('no_'+roll).classList.toggle('active',val==='❌');
+  updateSummary(ROSTER[document.getElementById('selClass').value]||[]);
+}
+
+function markAll(val){(ROSTER[document.getElementById('selClass').value]||[]).forEach(s=>setStatus(s.roll,val));}
+function clearAll(){
+  (ROSTER[document.getElementById('selClass').value]||[]).forEach(s=>{
+    statusMap[s.roll]='';
+    document.getElementById('ok_'+s.roll).classList.remove('active');
+    document.getElementById('no_'+s.roll).classList.remove('active');
+  });
+  updateSummary(ROSTER[document.getElementById('selClass').value]||[]);
+}
+
+function updateSummary(students){
+  const ok=students.filter(s=>statusMap[s.roll]==='✅').length;
+  const no=students.filter(s=>statusMap[s.roll]==='❌').length;
+  document.getElementById('summaryBar').innerHTML=`
+    <span class="summary-chip chip-total">Total: ${students.length}</span>
+    <span class="summary-chip chip-ok">✅ OK: ${ok}</span>
+    <span class="summary-chip chip-no">❌ Issues: ${no}</span>
+    <span class="summary-chip chip-pending">⏳ Pending: ${students.length-ok-no}</span>`;
+}
+
+async function submitForm(){
+  const teacher=document.getElementById('selTeacher').value;
+  const cls=document.getElementById('selClass').value;
+  const subject=document.getElementById('selSubject').value;
+  const noteType=document.getElementById('selNoteType').value;
+  const date=document.getElementById('selDate').value;
+  if(!teacher||!cls||!subject||!noteType||!date){
+    document.getElementById('formMsg').innerHTML='<div class="alert alert-error">Please fill all fields before submitting.</div>';
+    return;
+  }
+  const students=ROSTER[cls]||[];
+  const unmarked=students.filter(s=>!statusMap[s.roll]);
+  if(unmarked.length){
+    document.getElementById('formMsg').innerHTML=`<div class="alert alert-error">⚠️ ${unmarked.length} student(s) not marked. Please mark all students.</div>`;
+    return;
+  }
+  const btn=document.getElementById('btnSubmit');
+  btn.disabled=true;btn.textContent='Submitting...';
+  document.getElementById('formMsg').innerHTML='';
+  const rows=students.map(s=>({
+    timestamp:new Date().toISOString(),teacher,cls,subject,noteType,date,
+    roll:s.roll,admNo:s.admNo,name:s.name,mobile:s.mobile,
+    status:statusMap[s.roll]||'',remarks:remarksMap[s.roll]||''
+  }));
+  try{
+    const resp=await fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({rows}),headers:{'Content-Type':'text/plain'}});
+    const result=await resp.json();
+    if(result.status==='success'){
+      document.getElementById('formMsg').innerHTML=`<div class="alert alert-success">✅ Successfully submitted ${rows.length} student records!</div>`;
+      clearAll();
+      document.getElementById('selSubject').value='';
+      document.getElementById('selNoteType').value='';
+    } else throw new Error(result.message||'Unknown error');
+  } catch(e){
+    document.getElementById('formMsg').innerHTML=`<div class="alert alert-error">❌ Submission failed: ${e.message}. Please try again.</div>`;
+  }
+  btn.disabled=false;btn.textContent='✅ Submit Note Check';
+}
+
+// ── PRINCIPAL DASHBOARD ──────────────────────
+function initDash(){
+  ['ovClass','logClass','stuClass'].forEach(id=>{
+    const sel=document.getElementById(id);
+    if(sel.options.length<=1) CLASS_ORDER.forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent='Class '+c;sel.appendChild(o);});
+  });
+  ['ovTeacher','logTeacher'].forEach(id=>{
+    const sel=document.getElementById(id);
+    if(sel.options.length<=1) TEACHERS.forEach(t=>{const o=document.createElement('option');o.value=t;o.textContent=t;sel.appendChild(o);});
+  });
+  const now=new Date();
+  const toDate=now.toISOString().split('T')[0];
+  const fromDate=new Date(now-30*86400000).toISOString().split('T')[0];
+  document.getElementById('logFrom').value=fromDate;
+  document.getElementById('logTo').value=toDate;
+}
+
+// ── DATA LOADING via Apps Script (no CORS issue) ──
+async function loadData(){
+  const el=document.getElementById('refreshTime');
+  el.textContent='⏳ Loading data...';
+  try{
+    const url=SCRIPT_URL+'?action=getData&t='+Date.now();
+    const resp=await fetch(url);
+    if(!resp.ok) throw new Error('HTTP '+resp.status);
+    const result=await resp.json();
+    if(result.status!=='ok') throw new Error(result.message||'API error');
+    // Map sheet column headers → dashboard field names
+    allData=result.rows.map(r=>({
+      timestamp: r['Timestamp']   || '',
+      teacher:   r['Teacher']     || '',
+      cls:       r['Class']       || '',
+      subject:   r['Subject']     || '',
+      noteType:  r['Note Type']   || '',
+      date:      r['Check Date']  || '',
+      roll:      r['Roll No']     || '',
+      admNo:     r['Admission No']|| '',
+      name:      r['Student Name']|| '',
+      mobile:    r['Mobile']      || '',
+      status:    r['Status']      || '',
+      remarks:   r['Remarks']     || ''
+    })).filter(r=>r.teacher);
+    sessionMap=buildSessionMap(allData);
+    el.textContent='Last refreshed: '+new Date().toLocaleTimeString('en-IN');
+    renderStats();renderOverdue();renderOverview();renderLog();
+  } catch(e){
+    el.innerHTML='<span style="color:#dc2626">⚠️ Could not load data: '+e.message+
+      '. Check SCRIPT_URL in index.html and redeploy Apps Script.</span>';
+  }
+}
+
+function buildSessionMap(data){
+  const map={};
+  data.forEach(r=>{
+    const key=`${r.teacher}|${r.cls}|${r.subject}|${r.noteType}|${r.date}`;
+    if(!map[key]) map[key]=[];
+    map[key].push(r);
+  });
+  return map;
+}
+
+function daysSince(dateStr){
+  if(!dateStr) return 9999;
+  return Math.floor((Date.now()-new Date(dateStr))/(86400000));
+}
+function fmt(d){return d?d:'—';}
+
+function renderStats(){
+  const today=new Date().toISOString().split('T')[0];
+  const sessions=Object.keys(sessionMap);
+  const todaySessions=sessions.filter(k=>k.split('|')[4]===today);
+  const allOk=allData.filter(r=>r.status==='✅').length;
+  const pct=allData.length?Math.round(allOk/allData.length*100):0;
+  // compute overdue count
+  const teacherSubs={};
+  Object.entries(CLASS_SUBJECTS).forEach(([cls,map])=>{
+    Object.entries(map).forEach(([t,subs])=>{
+      subs.forEach(s=>{const k=`${t}|${cls}|${s}`;if(!teacherSubs[k])teacherSubs[k]={t,cls,s};});
+    });
+  });
+  let overdue=0;
+  Object.values(teacherSubs).forEach(({t,cls,s})=>{
+    const cnDays=Math.min(...['Class Note','Fair cum Exercise Note'].map(nt=>{
+      const k=`${t}|${cls}|${s}|${nt}`;
+      const dates=Object.keys(sessionMap).filter(sk=>sk.startsWith(k+'|')).map(sk=>sk.split('|')[4]);
+      return dates.length?daysSince(dates.sort().at(-1)):9999;
+    }));
+    if(cnDays>OVERDUE_DAYS) overdue++;
+  });
+  document.getElementById('statTotal').textContent=sessions.length;
+  document.getElementById('statToday').textContent=todaySessions.length;
+  document.getElementById('statOverdue').textContent=overdue;
+  document.getElementById('statPctOk').textContent=pct+'%';
+}
+
+function renderOverdue(){
+  const teacherSubs={};
+  Object.entries(CLASS_SUBJECTS).forEach(([cls,map])=>{
+    Object.entries(map).forEach(([t,subs])=>{
+      subs.forEach(s=>{const k=`${t}|${cls}|${s}`;if(!teacherSubs[k])teacherSubs[k]={t,cls,s};});
+    });
+  });
+  const overdue=[];
+  Object.values(teacherSubs).forEach(({t,cls,s})=>{
+    ['Class Note','Fair cum Exercise Note'].forEach(nt=>{
+      const dates=Object.keys(sessionMap).filter(sk=>sk.startsWith(`${t}|${cls}|${s}|${nt}|`)).map(sk=>sk.split('|')[4]);
+      const last=dates.length?dates.sort().at(-1):null;
+      const days=last?daysSince(last):9999;
+      if(days>OVERDUE_DAYS) overdue.push({t,cls,s,nt,last,days});
+    });
+  });
+  const sec=document.getElementById('overdueSection');
+  if(!overdue.length){sec.style.display='none';return;}
+  sec.style.display='block';
+  document.getElementById('overdueList').innerHTML=overdue.slice(0,20).map(o=>
+    `<div style="font-size:.82rem;padding:4px 0;border-bottom:1px solid #fca5a5">
+      <strong>${o.t}</strong> · Class ${o.cls} · ${o.s} · ${o.nt} — 
+      Last: ${o.last?o.last:'Never'} 
+      <span style="color:#991b1b;font-weight:700">(${o.days===9999?'No record':o.days+' days ago'})</span>
+    </div>`
+  ).join('');
+}
+
+function renderOverview(){
+  const fc=document.getElementById('ovClass').value;
+  const ft=document.getElementById('ovTeacher').value;
+  const teacherSubs={};
+  Object.entries(CLASS_SUBJECTS).forEach(([cls,map])=>{
+    if(fc&&cls!==fc) return;
+    Object.entries(map).forEach(([t,subs])=>{
+      if(ft&&t!==ft) return;
+      subs.forEach(s=>{
+        const k=`${t}|${cls}|${s}`;
+        if(!teacherSubs[k]) teacherSubs[k]={t,cls,sub:s,ldCN:null,ldFE:null,worst:0};
+      });
+    });
+  });
+  Object.keys(sessionMap).forEach(key=>{
+    const[t,cls,sub,nt,date]=key.split('|');
+    const k=`${t}|${cls}|${sub}`;
+    if(!teacherSubs[k]) return;
+    if(nt==='Class Note'&&(!teacherSubs[k].ldCN||date>teacherSubs[k].ldCN)) teacherSubs[k].ldCN=date;
+    if(nt==='Fair cum Exercise Note'&&(!teacherSubs[k].ldFE||date>teacherSubs[k].ldFE)) teacherSubs[k].ldFE=date;
+  });
+  const rows=Object.values(teacherSubs).map(r=>{
+    r.worst=Math.min(r.ldCN?daysSince(r.ldCN):9999, r.ldFE?daysSince(r.ldFE):9999);
+    return r;
+  }).sort((a,b)=>b.worst-a.worst);
+  const tbody=document.getElementById('overviewBody');
+  tbody.innerHTML=rows.length?rows.map(r=>{
+    const badge=r.worst>OVERDUE_DAYS?'<span class="badge badge-over">🔴 Overdue</span>':r.worst>20?'<span class="badge badge-due">🟡 Due Soon</span>':'<span class="badge badge-good">🟢 On Track</span>';
+    return`<tr><td><strong>${r.t}</strong></td><td>Class ${r.cls}</td><td>${r.sub}</td>
+      <td style="font-size:.79rem">${fmt(r.ldCN)}</td><td style="font-size:.79rem">${fmt(r.ldFE)}</td>
+      <td>${badge}</td>
+      <td><button class="btn btn-primary btn-sm" onclick="showHistory('${r.t}','${r.cls}','${r.sub}')">History</button></td></tr>`;
+  }).join(''):'<tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:18px">No records yet — teachers have not submitted any checks.</td></tr>';
+}
+
+function renderLog(){
+  const fc=document.getElementById('logClass').value;
+  const ft=document.getElementById('logTeacher').value;
+  const fn=document.getElementById('logNoteType').value;
+  const ff=document.getElementById('logFrom').value;
+  const ft2=document.getElementById('logTo').value;
+  let sessions=Object.entries(sessionMap).filter(([k])=>{
+    const[t,cls,,nt,date]=k.split('|');
+    if(fc&&cls!==fc) return false;
+    if(ft&&t!==ft) return false;
+    if(fn&&nt!==fn) return false;
+    if(ff&&date<ff) return false;
+    if(ft2&&date>ft2) return false;
+    return true;
+  }).sort((a,b)=>b[0].split('|')[4].localeCompare(a[0].split('|')[4]));
+  document.getElementById('logCount').textContent=`${sessions.length} session(s) found`;
+  const tbody=document.getElementById('logBody');
+  tbody.innerHTML=sessions.length?sessions.map(([k,rows])=>{
+    const[t,cls,sub,nt,date]=k.split('|');
+    const ok=rows.filter(r=>r.status==='✅').length,no=rows.filter(r=>r.status==='❌').length;
+    return`<tr><td>${date}</td><td>${t}</td><td>Class ${cls}</td><td>${sub}</td><td>${nt}</td>
+      <td><span class="badge badge-ok">✅ ${ok}</span></td>
+      <td><span class="badge badge-no">❌ ${no}</span></td>
+      <td>${rows.length}</td>
+      <td><button class="btn btn-primary btn-sm" onclick="showSession('${k}')">View</button></td></tr>`;
+  }).join(''):'<tr><td colspan="9" style="text-align:center;color:#94a3b8;padding:18px">No records found</td></tr>';
+}
+
+function onStuClassChange(){
+  const cls=document.getElementById('stuClass').value;
+  const subSel=document.getElementById('stuSubject');
+  subSel.innerHTML='<option value="">All</option>';
+  if(cls){
+    const subs=new Set();
+    Object.keys(sessionMap).forEach(k=>{const[,c,s]=k.split('|');if(c===cls)subs.add(s);});
+    subs.forEach(s=>{const o=document.createElement('option');o.value=s;o.textContent=s;subSel.appendChild(o);});
+  }
+  renderStudentView();
+}
+
+function renderStudentView(){
+  const cls=document.getElementById('stuClass').value;
+  const sub=document.getElementById('stuSubject').value;
+  const nt=document.getElementById('stuNoteType').value;
+  const tbody=document.getElementById('stuBody');
+  if(!cls){tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:18px">Select a class to view students</td></tr>';return;}
+  const sm={};
+  allData.filter(r=>r.cls===cls&&(!sub||r.subject===sub)&&(!nt||r.noteType===nt)).forEach(r=>{
+    if(!sm[r.admNo]) sm[r.admNo]={roll:r.roll,admNo:r.admNo,name:r.name,mobile:r.mobile,total:0,ok:0,no:0};
+    sm[r.admNo].total++;
+    if(r.status==='✅') sm[r.admNo].ok++;
+    if(r.status==='❌') sm[r.admNo].no++;
+  });
+  const students=Object.values(sm).sort((a,b)=>Number(a.roll)-Number(b.roll));
+  tbody.innerHTML=students.length?students.map(s=>{
+    const ir=s.total?Math.round(s.no/s.total*100):0;
+    const col=ir>50?'#dc2626':ir>25?'#d97706':'#16a34a';
+    return`<tr><td>${s.roll}</td><td><strong>${s.name}</strong></td>
+      <td style="font-size:.76rem;color:#64748b">${s.admNo}</td>
+      <td><a href="tel:${s.mobile}" style="color:#2563eb;font-weight:600">${s.mobile}</a></td>
+      <td>${s.total}</td>
+      <td><span class="badge badge-ok">✅ ${s.ok}</span></td>
+      <td><span class="badge badge-no">❌ ${s.no}</span></td>
+      <td><span style="color:${col};font-weight:700">${ir}%</span>
+        <div class="progress-bar"><div class="progress-fill" style="width:${100-ir}%;background:${col}"></div></div></td></tr>`;
+  }).join(''):'<tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:18px">No data yet for this class</td></tr>';
+}
+
+function showSession(key){
+  const rows=sessionMap[key]||[];
+  const[t,cls,sub,nt,date]=key.split('|');
+  const ok=rows.filter(r=>r.status==='✅').length,no=rows.filter(r=>r.status==='❌').length;
+  document.getElementById('modalTitle').textContent=`${t} · Class ${cls} · ${sub} · ${nt} · ${date}`;
+  document.getElementById('modalBody').innerHTML=`
+    <div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap">
+      <span class="badge badge-ok" style="font-size:.83rem;padding:4px 12px">✅ Complete: ${ok}</span>
+      <span class="badge badge-no" style="font-size:.83rem;padding:4px 12px">❌ Issues: ${no}</span>
+      <span style="font-size:.8rem;color:#64748b;padding:4px">Total: ${rows.length}</span>
+    </div>
+    <div style="overflow-x:auto"><table class="tbl">
+      <thead><tr><th>#</th><th>Student Name</th><th>Adm No</th><th>Mobile</th><th>Status</th><th>Remarks</th></tr></thead>
+      <tbody>${rows.sort((a,b)=>Number(a.roll)-Number(b.roll)).map(r=>`<tr>
+        <td>${r.roll}</td><td><strong>${r.name}</strong></td>
+        <td style="font-size:.76rem;color:#64748b">${r.admNo}</td>
+        <td><a href="tel:${r.mobile}" style="color:#2563eb">${r.mobile}</a></td>
+        <td>${r.status==='✅'?'<span class="badge badge-ok">✅ OK</span>':'<span class="badge badge-no">❌ Issue</span>'}</td>
+        <td style="font-size:.79rem;color:#64748b">${r.remarks||'—'}</td></tr>`).join('')}
+      </tbody></table></div>`;
+  document.getElementById('detailModal').classList.add('open');
+}
+
+function showHistory(teacher,cls,sub){
+  const relevant=Object.entries(sessionMap)
+    .filter(([k])=>{const[t,c,s]=k.split('|');return t===teacher&&c===cls&&s===sub;})
+    .sort((a,b)=>b[0].split('|')[4].localeCompare(a[0].split('|')[4]));
+  document.getElementById('modalTitle').textContent=`History: ${teacher} · Class ${cls} · ${sub}`;
+  document.getElementById('modalBody').innerHTML=`<table class="tbl">
+    <thead><tr><th>Date</th><th>Note Type</th><th>✅ OK</th><th>❌ Issues</th><th>Total</th><th>Action</th></tr></thead>
+    <tbody>${relevant.length?relevant.map(([k,rows])=>{
+      const[,,,nt,date]=k.split('|');
+      const ok=rows.filter(r=>r.status==='✅').length,no=rows.filter(r=>r.status==='❌').length;
+      return`<tr><td>${date}</td><td>${nt}</td>
+        <td><span class="badge badge-ok">✅ ${ok}</span></td>
+        <td><span class="badge badge-no">❌ ${no}</span></td>
+        <td>${rows.length}</td>
+        <td><button class="btn btn-primary btn-sm" onclick="showSession('${k}')">View</button></td></tr>`;
+    }).join(''):'<tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:12px">No history yet</td></tr>'}
+    </tbody></table>`;
+  document.getElementById('detailModal').classList.add('open');
+}
+
+function showTab(id,btn){
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');btn.classList.add('active');
+  if(id==='tabStudent') renderStudentView();
+}
+
+function closeModal(){document.getElementById('detailModal').classList.remove('open');}
+</script>
+</body>
+</html>
