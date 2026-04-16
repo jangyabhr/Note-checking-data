@@ -160,7 +160,7 @@ select:focus,input:focus{outline:none;border-color:#3b82f6;background:#fff}
     <div class="grid2" style="margin-bottom:12px">
       <div>
         <label>Subject</label>
-        <select id="selSubject">
+        <select id="selSubject" onchange="renderTeacherHistoryCard()">
           <option value="">-- Select Teacher &amp; Class first --</option>
         </select>
       </div>
@@ -207,6 +207,11 @@ select:focus,input:focus{outline:none;border-color:#3b82f6;background:#fff}
   <button class="btn-submit" id="btnSubmit" onclick="submitForm()" style="display:none">
     ✅ Submit Note Check
   </button>
+
+  <div class="card" id="teacherHistoryCard" style="display:none;margin-top:16px">
+    <h3>📋 My Past Submissions</h3>
+    <div id="teacherHistoryBody"></div>
+  </div>
 
 </div>
 </div>
@@ -406,6 +411,7 @@ function doLogin(){
   if(currentRole==='teacher' && pwd===TEACHER_PWD){
     showScreen('teacher');
     initTeacherForm();
+    loadData();
   } else if(currentRole==='principal' && pwd===PRINCIPAL_PWD){
     showScreen('principal');
     initDash();
@@ -457,6 +463,7 @@ function updateSubjects(){
     subSel.innerHTML='<option value="">-- Select Teacher & Class first --</option>';
     document.getElementById('rosterCard').style.display='none';
     document.getElementById('btnSubmit').style.display='none';
+    renderTeacherHistoryCard();
     return;
   }
   const subjects=(CLASS_SUBJECTS[cls]&&CLASS_SUBJECTS[cls][teacher])||[];
@@ -469,6 +476,7 @@ function updateSubjects(){
     subjects.forEach(s=>{const o=document.createElement('option');o.value=s;o.textContent=s;subSel.appendChild(o);});
     loadRoster(cls);
   }
+  renderTeacherHistoryCard();
 }
 
 function loadRoster(cls){
@@ -578,6 +586,41 @@ async function submitForm(){
   btn.disabled=false;btn.innerHTML='✅ Submit Note Check';
 }
 
+// ── TEACHER HISTORY ──────────────────────────
+function renderTeacherHistoryCard(){
+  const teacher=document.getElementById('selTeacher').value;
+  const cls=document.getElementById('selClass').value;
+  const sub=document.getElementById('selSubject').value;
+  const card=document.getElementById('teacherHistoryCard');
+  const body=document.getElementById('teacherHistoryBody');
+  if(!card) return;
+  if(!teacher||!cls||!sub){card.style.display='none';return;}
+  card.style.display='block';
+  if(!allData.length){
+    body.innerHTML='<div style="color:#94a3b8;font-size:.85rem;padding:8px 0">⏳ Loading history…</div>';
+    return;
+  }
+  const relevant=Object.entries(sessionMap)
+    .filter(([k])=>{const[t,c,s]=k.split('|');return t===teacher&&c===cls&&s===sub;})
+    .sort((a,b)=>b[0].split('|')[4].localeCompare(a[0].split('|')[4]));
+  if(!relevant.length){
+    body.innerHTML='<div style="color:#94a3b8;font-size:.85rem;padding:8px 0">No past submissions found for this combination.</div>';
+    return;
+  }
+  body.innerHTML=`<div style="overflow-x:auto"><table class="tbl">
+    <thead><tr><th>Date</th><th>Note Type</th><th>✅ OK</th><th>❌ Issues</th><th>Total</th><th></th></tr></thead>
+    <tbody>${relevant.map(([k,rows])=>{
+      const[,,,nt,date]=k.split('|');
+      const ok=rows.filter(r=>r.status==='✅').length,no=rows.filter(r=>r.status==='❌').length;
+      return`<tr><td>${date}</td><td>${nt}</td>
+        <td><span class="badge badge-ok">✅ ${ok}</span></td>
+        <td><span class="badge badge-no">❌ ${no}</span></td>
+        <td>${rows.length}</td>
+        <td><button class="btn btn-primary btn-sm" onclick="showSession('${k}')">View</button></td></tr>`;
+    }).join('')}</tbody>
+  </table></div>`;
+}
+
 // ── PRINCIPAL DASHBOARD ──────────────────────
 function initDash(){
   ['ovClass','logClass','stuClass'].forEach(id=>{
@@ -598,7 +641,7 @@ function initDash(){
 // ── DATA LOADING via Apps Script (no CORS issue) ──
 async function loadData(){
   const el=document.getElementById('refreshTime');
-  el.innerHTML='<span class="spin">⏳</span> Loading data…';
+  if(el) el.innerHTML='<span class="spin">⏳</span> Loading data…';
   const refreshBtn=document.getElementById('refreshBtn');
   if(refreshBtn) refreshBtn.style.display='none';
   try{
@@ -625,11 +668,14 @@ async function loadData(){
     sessionMap=buildSessionMap(allData);
     const nowR=new Date(),hR=nowR.getHours(),minR=String(nowR.getMinutes()).padStart(2,'0');
     const ampmR=hR>=12?'PM':'AM',h12R=String(hR%12||12).padStart(2,'0');
-    el.textContent=`Last refreshed: ${h12R}:${minR} ${ampmR}`;
+    if(el) el.textContent=`Last refreshed: ${h12R}:${minR} ${ampmR}`;
     if(refreshBtn) refreshBtn.style.display='inline-block';
-    renderStats();renderOverdue();renderOverview();renderLog();
+    if(document.getElementById('screenPrincipal').style.display!=='none'){
+      renderStats();renderOverdue();renderOverview();renderLog();
+    }
+    renderTeacherHistoryCard();
   } catch(e){
-    el.innerHTML='<span style="color:#dc2626">⚠️ Could not load data: '+e.message+
+    if(el) el.innerHTML='<span style="color:#dc2626">⚠️ Could not load data: '+e.message+
       '. Check SCRIPT_URL in index.html and redeploy Apps Script.</span>';
     if(refreshBtn) refreshBtn.style.display='inline-block';
   }
