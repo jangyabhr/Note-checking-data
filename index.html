@@ -56,6 +56,8 @@ select:focus,input:focus{outline:none;border-color:#3b82f6;background:#fff}
 .btn-submit{width:100%;padding:14px;background:#1a3a5c;color:#fff;border:none;border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer;transition:background .2s;margin-top:8px}
 .btn-submit:hover{background:#2563eb}
 .btn-submit:disabled{background:#94a3b8;cursor:not-allowed}
+@keyframes spin-anim{to{transform:rotate(360deg)}}
+.spin{display:inline-block;animation:spin-anim 1s linear infinite}
 .quick-btns{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
 .quick-btn{flex:1;min-width:100px;padding:7px;border:1.5px solid #dde3ed;border-radius:7px;font-size:.78rem;font-weight:600;cursor:pointer;background:#f8fafc;color:#475569}
 .quick-btn:hover{background:#e8f0fe;border-color:#3b82f6;color:#1e40af}
@@ -213,7 +215,10 @@ select:focus,input:focus{outline:none;border-color:#3b82f6;background:#fff}
 <div id="screenPrincipal" style="display:none">
 <div class="dash-wrap">
 
-  <div class="refresh-time" id="refreshTime"></div>
+  <div style="display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-bottom:8px">
+    <div class="refresh-time" id="refreshTime"></div>
+    <button id="refreshBtn" onclick="loadData()" style="display:none;padding:5px 12px;background:#1a3a5c;color:#fff;border:none;border-radius:7px;font-size:.8rem;font-weight:600;cursor:pointer">🔄 Refresh</button>
+  </div>
 
   <!-- STATS -->
   <div class="grid4" style="margin-bottom:14px">
@@ -522,6 +527,17 @@ function updateSummary(students){
     <span class="summary-chip chip-pending">⏳ Pending: ${students.length-ok-no}</span>`;
 }
 
+function formatTimestamp(){
+  const d=new Date();
+  const dd=String(d.getDate()).padStart(2,'0');
+  const mm=String(d.getMonth()+1).padStart(2,'0');
+  const yyyy=d.getFullYear();
+  const h=d.getHours(), min=String(d.getMinutes()).padStart(2,'0');
+  const ampm=h>=12?'PM':'AM';
+  const h12=String(h%12||12).padStart(2,'0');
+  return `${dd}/${mm}/${yyyy}, ${h12}:${min} ${ampm}`;
+}
+
 async function submitForm(){
   const teacher=document.getElementById('selTeacher').value;
   const cls=document.getElementById('selClass').value;
@@ -539,10 +555,11 @@ async function submitForm(){
     return;
   }
   const btn=document.getElementById('btnSubmit');
-  btn.disabled=true;btn.textContent='Submitting...';
-  document.getElementById('formMsg').innerHTML='';
+  btn.disabled=true;
+  btn.innerHTML='<span class="spin">⏳</span> Submitting… please wait';
+  document.getElementById('formMsg').innerHTML='<div class="alert alert-info" style="background:#eff6ff;color:#1e40af;border-left:4px solid #3b82f6;padding:10px 14px;border-radius:8px;margin-bottom:8px">⏳ Sending data — first submission may take up to 10 seconds…</div>';
   const rows=students.map(s=>({
-    timestamp:new Date().toISOString(),teacher,cls,subject,noteType,date,
+    timestamp:formatTimestamp(),teacher,cls,subject,noteType,date,
     roll:s.roll,admNo:s.admNo,name:s.name,mobile:s.mobile,
     status:statusMap[s.roll]||'',remarks:remarksMap[s.roll]||''
   }));
@@ -558,7 +575,7 @@ async function submitForm(){
   } catch(e){
     document.getElementById('formMsg').innerHTML=`<div class="alert alert-error">❌ Submission failed: ${e.message}. Please try again.</div>`;
   }
-  btn.disabled=false;btn.textContent='✅ Submit Note Check';
+  btn.disabled=false;btn.innerHTML='✅ Submit Note Check';
 }
 
 // ── PRINCIPAL DASHBOARD ──────────────────────
@@ -581,7 +598,9 @@ function initDash(){
 // ── DATA LOADING via Apps Script (no CORS issue) ──
 async function loadData(){
   const el=document.getElementById('refreshTime');
-  el.textContent='⏳ Loading data...';
+  el.innerHTML='<span class="spin">⏳</span> Loading data…';
+  const refreshBtn=document.getElementById('refreshBtn');
+  if(refreshBtn) refreshBtn.style.display='none';
   try{
     const url=SCRIPT_URL+'?action=getData&t='+Date.now();
     const resp=await fetch(url);
@@ -604,11 +623,15 @@ async function loadData(){
       remarks:   r['Remarks']     || ''
     })).filter(r=>r.teacher);
     sessionMap=buildSessionMap(allData);
-    el.textContent='Last refreshed: '+new Date().toLocaleTimeString('en-IN');
+    const nowR=new Date(),hR=nowR.getHours(),minR=String(nowR.getMinutes()).padStart(2,'0');
+    const ampmR=hR>=12?'PM':'AM',h12R=String(hR%12||12).padStart(2,'0');
+    el.textContent=`Last refreshed: ${h12R}:${minR} ${ampmR}`;
+    if(refreshBtn) refreshBtn.style.display='inline-block';
     renderStats();renderOverdue();renderOverview();renderLog();
   } catch(e){
     el.innerHTML='<span style="color:#dc2626">⚠️ Could not load data: '+e.message+
       '. Check SCRIPT_URL in index.html and redeploy Apps Script.</span>';
+    if(refreshBtn) refreshBtn.style.display='inline-block';
   }
 }
 
