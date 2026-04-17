@@ -104,6 +104,22 @@ select:focus,input:focus{outline:none;border-color:#3b82f6;background:#fff}
 .modal-header h3{color:#1a3a5c;font-size:.95rem;font-weight:700}
 .close-btn{background:none;border:none;font-size:1.3rem;cursor:pointer;color:#64748b}
 .loading-spinner{text-align:center;padding:30px;color:#64748b;font-size:.9rem}
+
+/* ── CLASS REPORT TAB ── */
+.cr-tbl{width:100%;border-collapse:collapse;font-size:.78rem;white-space:nowrap}
+.cr-tbl th{background:#1a3a5c;color:#fff;padding:7px 10px;text-align:center;font-weight:600}
+.cr-tbl th.cr-left{text-align:left}
+.cr-tbl td{padding:6px 8px;border-bottom:1px solid #eef0f5;vertical-align:middle}
+.cr-tbl tr:hover td{background:#f5f8ff}
+.cr-sub{font-size:.68rem!important;background:#2d5a8e!important;padding:5px 8px!important;font-weight:500!important}
+.cr-sub-border{border-left:2px solid #3b6ea5!important}
+.cr-cell{display:inline-block;padding:3px 8px;border-radius:6px;font-size:.76rem;font-weight:700;min-width:38px;text-align:center}
+.cr-green{background:#dcfce7;color:#166534}
+.cr-yellow{background:#fef9c3;color:#92400e}
+.cr-red{background:#fee2e2;color:#991b1b}
+.cr-gray{background:#f1f5f9;color:#94a3b8;font-weight:400}
+.cr-legend{display:flex;gap:10px;flex-wrap:wrap;font-size:.74rem;margin-bottom:10px;align-items:center;color:#475569}
+.cr-legend span{display:flex;align-items:center;gap:4px}
 </style>
 </head>
 <body>
@@ -245,6 +261,7 @@ select:focus,input:focus{outline:none;border-color:#3b82f6;background:#fff}
       <button class="tab active" onclick="showTab('tabOverview',this)">Overview by Teacher</button>
       <button class="tab" onclick="showTab('tabLog',this)">Submission Log</button>
       <button class="tab" onclick="showTab('tabStudent',this)">Student View</button>
+      <button class="tab" onclick="showTab('tabClassReport',this)">Class Report</button>
     </div>
 
     <!-- TAB: Overview -->
@@ -333,6 +350,28 @@ select:focus,input:focus{outline:none;border-color:#3b82f6;background:#fff}
           </tr></thead>
           <tbody id="stuBody"></tbody>
         </table>
+      </div>
+    </div>
+
+    <!-- TAB: Class Report -->
+    <div class="tab-content" id="tabClassReport">
+      <div class="filter-row" style="max-width:260px">
+        <div><label>Class</label>
+          <select id="crClass" onchange="renderClassReport()">
+            <option value="">-- Select Class --</option>
+          </select>
+        </div>
+      </div>
+      <div class="cr-legend">
+        <strong>Key:</strong>
+        <span><span class="cr-cell cr-green">✅ N</span> All OK (N = total checks)</span>
+        <span><span class="cr-cell cr-yellow">X/N</span> Some issues (&lt;30%)</span>
+        <span><span class="cr-cell cr-red">X/N</span> Many issues (≥30%)</span>
+        <span><span class="cr-cell cr-gray">—</span> Not checked yet</span>
+        <span style="margin-left:4px;color:#94a3b8">· CN = Class Note · FCE = Fair cum Exercise Note</span>
+      </div>
+      <div style="overflow-x:auto" id="crTableWrap">
+        <p style="text-align:center;color:#94a3b8;padding:20px">Select a class to view the report.</p>
       </div>
     </div>
   </div>
@@ -623,7 +662,7 @@ function renderTeacherHistoryCard(){
 
 // ── PRINCIPAL DASHBOARD ──────────────────────
 function initDash(){
-  ['ovClass','logClass','stuClass'].forEach(id=>{
+  ['ovClass','logClass','stuClass','crClass'].forEach(id=>{
     const sel=document.getElementById(id);
     if(sel.options.length<=1) CLASS_ORDER.forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent='Class '+c;sel.appendChild(o);});
   });
@@ -899,11 +938,83 @@ function showHistory(teacher,cls,sub){
   document.getElementById('detailModal').classList.add('open');
 }
 
+function renderClassReport(){
+  const cls=document.getElementById('crClass').value;
+  const wrap=document.getElementById('crTableWrap');
+  if(!cls){
+    wrap.innerHTML='<p style="text-align:center;color:#94a3b8;padding:20px">Select a class to view the report.</p>';
+    return;
+  }
+  const students=ROSTER[cls]||[];
+  if(!students.length){
+    wrap.innerHTML='<div class="alert alert-info" style="max-width:420px">⚠️ No roster data for Class '+cls+' yet. Roster will be updated soon.</div>';
+    return;
+  }
+  // collect unique subjects for this class from CLASS_SUBJECTS
+  const subjectSet=new Set();
+  Object.values(CLASS_SUBJECTS[cls]||{}).forEach(subs=>subs.forEach(s=>subjectSet.add(s)));
+  const subjects=[...subjectSet].sort();
+  if(!subjects.length){
+    wrap.innerHTML='<div class="alert alert-info" style="max-width:420px">No subjects assigned for Class '+cls+'.</div>';
+    return;
+  }
+  // build lookup: admNo → subject → 'CN'|'FCE' → {ok, total}
+  const lkp={};
+  students.forEach(s=>{lkp[s.admNo]={};});
+  allData.filter(r=>r.cls===cls).forEach(r=>{
+    if(!lkp[r.admNo]) return;
+    if(!lkp[r.admNo][r.subject]) lkp[r.admNo][r.subject]={};
+    const nt=r.noteType==='Class Note'?'CN':'FCE';
+    if(!lkp[r.admNo][r.subject][nt]) lkp[r.admNo][r.subject][nt]={ok:0,total:0};
+    lkp[r.admNo][r.subject][nt].total++;
+    if(r.status==='✅') lkp[r.admNo][r.subject][nt].ok++;
+  });
+  function cell(d){
+    if(!d||d.total===0) return '<span class="cr-cell cr-gray">—</span>';
+    const issues=d.total-d.ok;
+    const ir=issues/d.total;
+    const cls2=issues===0?'cr-green':ir>=0.3?'cr-red':'cr-yellow';
+    const lbl=issues===0?'✅ '+d.total:d.ok+'/'+d.total;
+    return '<span class="cr-cell '+cls2+'">'+lbl+'</span>';
+  }
+  const subHead=subjects.map(s=>'<th colspan="2" class="cr-sub-border" style="text-align:center">'+s+'</th>').join('');
+  const subSubHead=subjects.map(()=>'<th class="cr-sub cr-sub-border">CN</th><th class="cr-sub">FCE</th>').join('');
+  const bodyRows=students.map(s=>{
+    const subCells=subjects.map(sub=>{
+      const cn=lkp[s.admNo]?.[sub]?.['CN']||null;
+      const fce=lkp[s.admNo]?.[sub]?.['FCE']||null;
+      return '<td class="cr-sub-border" style="text-align:center">'+cell(cn)+'</td>'+
+             '<td style="text-align:center">'+cell(fce)+'</td>';
+    }).join('');
+    return '<tr>'+
+      '<td style="color:#64748b;font-weight:600;text-align:center">'+s.roll+'</td>'+
+      '<td><strong style="font-size:.82rem">'+s.name+'</strong></td>'+
+      '<td style="font-size:.74rem;color:#64748b">'+s.admNo+'</td>'+
+      subCells+
+      '<td><a href="tel:'+s.mobile+'" style="color:#2563eb;font-size:.78rem;font-weight:600;white-space:nowrap">'+s.mobile+'</a></td>'+
+      '</tr>';
+  }).join('');
+  wrap.innerHTML='<table class="cr-tbl">'+
+    '<thead>'+
+      '<tr>'+
+        '<th rowspan="2" class="cr-left" style="min-width:30px">#</th>'+
+        '<th rowspan="2" class="cr-left" style="min-width:150px">Student Name</th>'+
+        '<th rowspan="2" class="cr-left" style="min-width:90px">Adm No</th>'+
+        subHead+
+        '<th rowspan="2" style="min-width:100px">Mobile</th>'+
+      '</tr>'+
+      '<tr>'+subSubHead+'</tr>'+
+    '</thead>'+
+    '<tbody>'+bodyRows+'</tbody>'+
+  '</table>';
+}
+
 function showTab(id,btn){
   document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.getElementById(id).classList.add('active');btn.classList.add('active');
   if(id==='tabStudent') renderStudentView();
+  if(id==='tabClassReport') renderClassReport();
 }
 
 function closeModal(){document.getElementById('detailModal').classList.remove('open');}
