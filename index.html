@@ -105,6 +105,12 @@ select:focus,input:focus{outline:none;border-color:#3b82f6;background:#fff}
 .close-btn{background:none;border:none;font-size:1.3rem;cursor:pointer;color:#64748b}
 .loading-spinner{text-align:center;padding:30px;color:#64748b;font-size:.9rem}
 
+/* ── TEACHER HISTORY ── */
+.tt-tab-bar{display:flex;gap:4px;margin-bottom:16px;border-bottom:2px solid #e2e8f0}
+.tt-tab{padding:8px 16px;border:none;background:none;font-size:.85rem;font-weight:600;color:#64748b;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;border-radius:6px 6px 0 0}
+.tt-tab.active{color:#1a3a5c;border-bottom-color:#1a3a5c;background:#f0f4f8}
+.th-refresh{font-size:.74rem;color:#94a3b8;text-align:right;margin-bottom:10px}
+
 /* ── CLASS REPORT TAB ── */
 .cr-tbl{width:100%;border-collapse:collapse;font-size:.78rem;white-space:nowrap}
 .cr-tbl th{background:#1a3a5c;color:#fff;padding:7px 10px;text-align:center;font-weight:600}
@@ -156,6 +162,15 @@ select:focus,input:focus{outline:none;border-color:#3b82f6;background:#fff}
 <!-- TEACHER FORM -->
 <div id="screenTeacher" style="display:none">
 <div class="form-wrap">
+
+  <!-- Teacher top-level tabs -->
+  <div class="tt-tab-bar">
+    <button class="tt-tab active" onclick="showTeacherTab('ttSubmit',this)">📝 Submit Check</button>
+    <button class="tt-tab" onclick="showTeacherTab('ttHistory',this)">📊 My History</button>
+  </div>
+
+  <!-- TAB: Submit -->
+  <div id="ttSubmit">
 
   <div class="card">
     <h3>📋 Submission Details</h3>
@@ -225,9 +240,73 @@ select:focus,input:focus{outline:none;border-color:#3b82f6;background:#fff}
   </button>
 
   <div class="card" id="teacherHistoryCard" style="display:none;margin-top:16px">
-    <h3>📋 My Past Submissions</h3>
+    <h3>📋 My Past Submissions — this class &amp; subject</h3>
     <div id="teacherHistoryBody"></div>
   </div>
+
+  </div><!-- end ttSubmit -->
+
+  <!-- TAB: My History -->
+  <div id="ttHistory" style="display:none">
+    <div id="tHistoryMsg"></div>
+    <div class="th-refresh" id="tHistoryRefresh"></div>
+
+    <!-- Sub-tabs -->
+    <div class="tabs" style="margin-bottom:14px">
+      <button class="tab active" onclick="showHistorySubTab('tthLog',this)">📋 Session Log</button>
+      <button class="tab" onclick="showHistorySubTab('tthTracker',this)">👥 Student Tracker</button>
+    </div>
+
+    <!-- Session Log -->
+    <div class="tab-content active" id="tthLog">
+      <div class="filter-row">
+        <div><label>Class</label>
+          <select id="tLogClass" onchange="renderTeacherLog()"><option value="">All Classes</option></select>
+        </div>
+        <div><label>From</label><input type="date" id="tLogFrom" onchange="renderTeacherLog()"></div>
+        <div><label>To</label><input type="date" id="tLogTo" onchange="renderTeacherLog()"></div>
+      </div>
+      <div id="tLogCount" style="font-size:.78rem;color:#64748b;margin-bottom:8px"></div>
+      <div style="overflow-x:auto">
+        <table class="tbl">
+          <thead><tr>
+            <th>Date</th><th>Class</th><th>Subject</th><th>Note Type</th>
+            <th>✅ OK</th><th>❌ Issues</th><th>Total</th><th></th>
+          </tr></thead>
+          <tbody id="tLogBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Student Tracker -->
+    <div class="tab-content" id="tthTracker">
+      <div class="filter-row">
+        <div><label>Class</label>
+          <select id="tTrackClass" onchange="onTTrackClassChange()"><option value="">-- Select Class --</option></select>
+        </div>
+        <div><label>Subject</label>
+          <select id="tTrackSubject" onchange="renderTeacherTracker()"><option value="">All</option></select>
+        </div>
+        <div><label>Note Type</label>
+          <select id="tTrackNoteType" onchange="renderTeacherTracker()">
+            <option value="">All</option>
+            <option>Class Note</option>
+            <option>Fair cum Exercise Note</option>
+          </select>
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="tbl">
+          <thead><tr>
+            <th>#</th><th>Student Name</th><th>Adm No</th>
+            <th>Checks</th><th>✅ OK</th><th>❌ Issues</th><th>Issue Rate</th><th>Last Checked</th>
+          </tr></thead>
+          <tbody id="tTrackBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- end ttHistory -->
 
 </div>
 </div>
@@ -491,6 +570,7 @@ function initTeacherForm(){
   if(cSel.options.length<=1){
     CLASS_ORDER.forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent='Class '+c;cSel.appendChild(o);});
   }
+  initTeacherHistory();
 }
 
 function updateSubjects(){
@@ -658,6 +738,154 @@ function renderTeacherHistoryCard(){
         <td><button class="btn btn-primary btn-sm" onclick="showSession('${k}')">View</button></td></tr>`;
     }).join('')}</tbody>
   </table></div>`;
+}
+
+// ── TEACHER HISTORY ──────────────────────────
+function showTeacherTab(id,btn){
+  document.getElementById('ttSubmit').style.display=id==='ttSubmit'?'block':'none';
+  document.getElementById('ttHistory').style.display=id==='ttHistory'?'block':'none';
+  document.querySelectorAll('.tt-tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  if(id==='ttHistory') loadAndRenderTeacherHistory();
+}
+
+function showHistorySubTab(id,btn){
+  document.querySelectorAll('#ttHistory .tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('#ttHistory .tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+}
+
+async function loadAndRenderTeacherHistory(){
+  const teacher=document.getElementById('selTeacher').value;
+  const msg=document.getElementById('tHistoryMsg');
+  if(!teacher){
+    msg.innerHTML='<div class="alert alert-info">Please select your name in the Submit tab first, then come back here.</div>';
+    return;
+  }
+  msg.innerHTML='';
+  if(allData.length){
+    document.getElementById('tHistoryRefresh').textContent='Data already loaded.';
+    renderTeacherLog();renderTeacherTracker();return;
+  }
+  msg.innerHTML='<div class="loading-spinner">⏳ Loading your history…</div>';
+  try{
+    const resp=await fetch(SCRIPT_URL+'?action=getData&t='+Date.now());
+    if(!resp.ok) throw new Error('HTTP '+resp.status);
+    const result=await resp.json();
+    if(result.status!=='ok') throw new Error(result.message||'API error');
+    allData=result.rows.map(r=>({
+      timestamp:r['Timestamp']||'',teacher:r['Teacher']||'',cls:r['Class']||'',
+      subject:r['Subject']||'',noteType:r['Note Type']||'',date:r['Check Date']||'',
+      roll:r['Roll No']||'',admNo:r['Admission No']||'',name:r['Student Name']||'',
+      mobile:r['Mobile']||'',status:r['Status']||'',remarks:r['Remarks']||''
+    })).filter(r=>r.teacher);
+    sessionMap=buildSessionMap(allData);
+    msg.innerHTML='';
+    document.getElementById('tHistoryRefresh').textContent='Last refreshed: '+new Date().toLocaleTimeString('en-IN');
+    renderTeacherLog();renderTeacherTracker();
+  }catch(e){
+    msg.innerHTML='<div class="alert alert-error">❌ Could not load history: '+e.message+'</div>';
+  }
+}
+
+function initTeacherHistory(){
+  ['tLogClass','tTrackClass'].forEach(id=>{
+    const sel=document.getElementById(id);
+    if(sel.options.length<=1) CLASS_ORDER.forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent='Class '+c;sel.appendChild(o);});
+  });
+  const now=new Date();
+  document.getElementById('tLogTo').value=now.toISOString().split('T')[0];
+  document.getElementById('tLogFrom').value=new Date(now-60*86400000).toISOString().split('T')[0];
+}
+
+function renderTeacherLog(){
+  const teacher=document.getElementById('selTeacher').value;
+  const fc=document.getElementById('tLogClass').value;
+  const ff=document.getElementById('tLogFrom').value;
+  const ft=document.getElementById('tLogTo').value;
+  const tbody=document.getElementById('tLogBody');
+  if(!teacher){
+    tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:16px">Select your name in the Submit tab first.</td></tr>';
+    return;
+  }
+  const sessions=Object.entries(sessionMap).filter(([k])=>{
+    const[t,cls,,,date]=k.split('|');
+    if(t!==teacher) return false;
+    if(fc&&cls!==fc) return false;
+    if(ff&&date<ff) return false;
+    if(ft&&date>ft) return false;
+    return true;
+  }).sort((a,b)=>b[0].split('|')[4].localeCompare(a[0].split('|')[4]));
+  document.getElementById('tLogCount').textContent=sessions.length+' session(s) found';
+  tbody.innerHTML=sessions.length?sessions.map(([k,rows])=>{
+    const[,cls,sub,nt,date]=k.split('|');
+    const ok=rows.filter(r=>r.status==='✅').length,no=rows.filter(r=>r.status==='❌').length;
+    return`<tr><td>${date}</td><td>Class ${cls}</td><td>${sub}</td><td>${nt}</td>
+      <td><span class="badge badge-ok">✅ ${ok}</span></td>
+      <td><span class="badge badge-no">❌ ${no}</span></td>
+      <td>${rows.length}</td>
+      <td><button class="btn btn-primary btn-sm" onclick="showSession('${k}')">View</button></td></tr>`;
+  }).join(''):'<tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:16px">No sessions found for this filter.</td></tr>';
+}
+
+function onTTrackClassChange(){
+  const teacher=document.getElementById('selTeacher').value;
+  const cls=document.getElementById('tTrackClass').value;
+  const subSel=document.getElementById('tTrackSubject');
+  subSel.innerHTML='<option value="">All</option>';
+  if(teacher&&cls){
+    const subs=new Set();
+    Object.keys(sessionMap).forEach(k=>{const[t,c,s]=k.split('|');if(t===teacher&&c===cls)subs.add(s);});
+    subs.forEach(s=>{const o=document.createElement('option');o.value=s;o.textContent=s;subSel.appendChild(o);});
+  }
+  renderTeacherTracker();
+}
+
+function renderTeacherTracker(){
+  const teacher=document.getElementById('selTeacher').value;
+  const cls=document.getElementById('tTrackClass').value;
+  const sub=document.getElementById('tTrackSubject').value;
+  const nt=document.getElementById('tTrackNoteType').value;
+  const tbody=document.getElementById('tTrackBody');
+  if(!teacher){
+    tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:16px">Select your name in the Submit tab first.</td></tr>';
+    return;
+  }
+  if(!cls){
+    tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:16px">Select a class to view students.</td></tr>';
+    return;
+  }
+  const sm={};
+  allData.filter(r=>r.teacher===teacher&&r.cls===cls&&(!sub||r.subject===sub)&&(!nt||r.noteType===nt)).forEach(r=>{
+    if(!sm[r.admNo]) sm[r.admNo]={roll:r.roll,admNo:r.admNo,name:r.name,total:0,ok:0,no:0,last:''};
+    sm[r.admNo].total++;
+    if(r.status==='✅') sm[r.admNo].ok++;
+    if(r.status==='❌') sm[r.admNo].no++;
+    if(!sm[r.admNo].last||r.date>sm[r.admNo].last) sm[r.admNo].last=r.date;
+  });
+  // merge with roster so students with 0 checks still appear
+  (ROSTER[cls]||[]).forEach(s=>{
+    if(!sm[s.admNo]) sm[s.admNo]={roll:s.roll,admNo:s.admNo,name:s.name,total:0,ok:0,no:0,last:''};
+  });
+  const students=Object.values(sm).sort((a,b)=>Number(a.roll)-Number(b.roll));
+  tbody.innerHTML=students.map(s=>{
+    const ir=s.total?Math.round(s.no/s.total*100):null;
+    const col=ir===null?'#94a3b8':ir>50?'#dc2626':ir>25?'#d97706':'#16a34a';
+    const rateCell=ir===null
+      ?'<span style="color:#94a3b8">—</span>'
+      :`<span style="color:${col};font-weight:700">${ir}%</span>
+        <div class="progress-bar"><div class="progress-fill" style="width:${100-ir}%;background:${col}"></div></div>`;
+    return`<tr>
+      <td>${s.roll}</td>
+      <td><strong>${s.name}</strong></td>
+      <td style="font-size:.76rem;color:#64748b">${s.admNo}</td>
+      <td style="text-align:center;font-weight:600">${s.total||'<span style="color:#94a3b8">—</span>'}</td>
+      <td>${s.total?'<span class="badge badge-ok">✅ '+s.ok+'</span>':'<span style="color:#94a3b8">—</span>'}</td>
+      <td>${s.total?'<span class="badge badge-no">❌ '+s.no+'</span>':'<span style="color:#94a3b8">—</span>'}</td>
+      <td>${rateCell}</td>
+      <td style="font-size:.79rem;color:#64748b">${s.last||'—'}</td></tr>`;
+  }).join('');
 }
 
 // ── PRINCIPAL DASHBOARD ──────────────────────
