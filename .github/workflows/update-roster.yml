@@ -1,0 +1,47 @@
+name: Update Roster
+
+# Runs automatically whenever roster.csv is pushed to main.
+# Converts roster.csv → ROSTER object in index.html and commits the result.
+# No manual steps needed — just edit roster.csv and push.
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - roster.csv
+
+jobs:
+  update-roster:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write   # needed to commit index.html back to the repo
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install pandas openpyxl
+
+      - name: Update ROSTER in index.html
+        run: python update_roster.py roster.csv --html index.html
+
+      - name: Commit updated index.html
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          # Only commit if index.html actually changed
+          git diff --cached --quiet \
+            && echo "No changes — roster already up to date." \
+            || git commit -m "Auto-update roster from roster.csv [skip ci]"
+
+      - name: Push changes
+        run: git push

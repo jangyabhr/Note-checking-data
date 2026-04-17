@@ -2,23 +2,25 @@
 """
 update_roster.py
 ----------------
-Reads student roster from an Excel file and updates the hardcoded
+Reads student roster from a CSV or Excel file and updates the hardcoded
 ROSTER constant in index.html.  Optionally commits and pushes to GitHub.
 
-Excel file format (single sheet, any name):
+Accepted formats:
+    roster.csv   — recommended (plain text, works best with Git)
+    roster.xlsx  — Excel workbook (single sheet)
+
+File format (columns are case-insensitive, extra whitespace ignored):
     Class  |  Roll No  |  Adm No   |  Name               |  Mobile
     6A     |  1        |  001/754  |  SMRUTI BEHERA      |  9937953808
     6A     |  2        |  002/755  |  SUDHANSU PATRO     |  9078924824
     ...
 
-Column names are case-insensitive and extra whitespace is ignored.
-Classes with no students in the Excel will be written as empty lists [].
-
 Usage:
+    python update_roster.py roster.csv
     python update_roster.py roster.xlsx
-    python update_roster.py roster.xlsx --html path/to/index.html
-    python update_roster.py roster.xlsx --push
-    python update_roster.py roster.xlsx --push --message "Update roster for 2026-27"
+    python update_roster.py roster.csv --html path/to/index.html
+    python update_roster.py roster.csv --push
+    python update_roster.py roster.csv --push --message "Update roster for 2026-27"
 
 Requirements:
     pip install pandas openpyxl
@@ -80,15 +82,22 @@ def _normalise_columns(df: "pd.DataFrame") -> "pd.DataFrame":
     return df.rename(columns=renamed)
 
 
-def read_roster(excel_path: str) -> dict:
-    """Parse the Excel file and return a ROSTER dict keyed by class."""
+def read_roster(file_path: str) -> dict:
+    """Parse a CSV or Excel file and return a ROSTER dict keyed by class."""
+    ext = Path(file_path).suffix.lower()
     try:
-        df = pd.read_excel(excel_path, dtype=str)
+        if ext == '.csv':
+            df = pd.read_csv(file_path, dtype=str)
+        elif ext in ('.xlsx', '.xls'):
+            df = pd.read_excel(file_path, dtype=str)
+        else:
+            print(f"ERROR: Unsupported file type '{ext}'. Use .csv or .xlsx")
+            sys.exit(1)
     except FileNotFoundError:
-        print(f"ERROR: File not found — {excel_path}")
+        print(f"ERROR: File not found — {file_path}")
         sys.exit(1)
     except Exception as e:
-        print(f"ERROR reading Excel: {e}")
+        print(f"ERROR reading file: {e}")
         sys.exit(1)
 
     df = _normalise_columns(df)
@@ -214,7 +223,7 @@ def main():
     )
     parser.add_argument(
         'excel',
-        help='Path to the roster Excel file (.xlsx)',
+        help='Path to the roster file (.csv recommended, or .xlsx)',
     )
     parser.add_argument(
         '--html',
