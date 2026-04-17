@@ -687,7 +687,8 @@ function renderStats(){
       const dates=Object.keys(sessionMap).filter(sk=>sk.startsWith(k+'|')).map(sk=>sk.split('|')[4]);
       return dates.length?daysSince(dates.sort().at(-1)):9999;
     }));
-    if(cnDays>OVERDUE_DAYS) overdue++;
+    const hasAny=Object.keys(sessionMap).some(sk=>sk.startsWith(`${t}|${cls}|${s}|`));
+    if(hasAny&&cnDays>OVERDUE_DAYS) overdue++;
   });
   document.getElementById('statTotal').textContent=sessions.length;
   document.getElementById('statToday').textContent=todaySessions.length;
@@ -707,7 +708,8 @@ function renderOverdue(){
     ['Class Note','Fair cum Exercise Note'].forEach(nt=>{
       const dates=Object.keys(sessionMap).filter(sk=>sk.startsWith(`${t}|${cls}|${s}|${nt}|`)).map(sk=>sk.split('|')[4]);
       const last=dates.length?dates.sort().at(-1):null;
-      const days=last?daysSince(last):9999;
+      if(!last) return;
+      const days=daysSince(last);
       if(days>OVERDUE_DAYS) overdue.push({t,cls,s,nt,last,days});
     });
   });
@@ -746,11 +748,20 @@ function renderOverview(){
   });
   const rows=Object.values(teacherSubs).map(r=>{
     r.worst=Math.min(r.ldCN?daysSince(r.ldCN):9999, r.ldFE?daysSince(r.ldFE):9999);
+    r.notStarted=!r.ldCN&&!r.ldFE;
     return r;
-  }).sort((a,b)=>b.worst-a.worst);
+  }).sort((a,b)=>{
+    if(a.notStarted&&!b.notStarted) return 1;
+    if(!a.notStarted&&b.notStarted) return -1;
+    return b.worst-a.worst;
+  });
   const tbody=document.getElementById('overviewBody');
   tbody.innerHTML=rows.length?rows.map(r=>{
-    const badge=r.worst>OVERDUE_DAYS?'<span class="badge badge-over">🔴 Overdue</span>':r.worst>20?'<span class="badge badge-due">🟡 Due Soon</span>':'<span class="badge badge-good">🟢 On Track</span>';
+    const badge=r.notStarted
+      ?'<span class="badge" style="background:#dbeafe;color:#1e40af">⬜ Not Started</span>'
+      :r.worst>OVERDUE_DAYS?'<span class="badge badge-over">🔴 Overdue</span>'
+      :r.worst>20?'<span class="badge badge-due">🟡 Due Soon</span>'
+      :'<span class="badge badge-good">🟢 On Track</span>';
     return`<tr><td><strong>${r.t}</strong></td><td>Class ${r.cls}</td><td>${r.sub}</td>
       <td style="font-size:.79rem">${fmt(r.ldCN)}</td><td style="font-size:.79rem">${fmt(r.ldFE)}</td>
       <td>${badge}</td>
